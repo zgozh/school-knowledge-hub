@@ -18,9 +18,9 @@ async def create_source(payload: dict):
     cfg = SourceConfig(id="", name=payload["name"], list_url=payload["list_url"],
                        adapter=payload["adapter"], enabled=payload.get("enabled", True),
                        interval_minutes=payload.get("interval_minutes", 360))
-    return {"id": sources.save_source(cfg)}
+    return {"id": await sources.save_source(cfg)}
 
 
 @router.delete("/{source_id}")
-def remove_source(source_id: str):
-    return {"deleted": sources.delete_source(source_id)}
+async def remove_source(source_id: str):
+    return {"deleted": await sources.delete_source(source_id)}

@@ -38,13 +38,13 @@ async def list_all_sources() -> list[SourceConfig]:
     return [SourceConfig.from_dict(d) async for d in docs]
 
 
-def save_source(cfg: SourceConfig) -> str:
+async def save_source(cfg: SourceConfig) -> str:
     if not cfg.id:
         cfg.id = uuid.uuid4().hex[:12]
-    get_mongo()["sources"].update_one({"id": cfg.id}, {"$set": asdict(cfg)}, upsert=True)
+    await get_mongo()["sources"].update_one({"id": cfg.id}, {"$set": asdict(cfg)}, upsert=True)
     return cfg.id
 
 
-def delete_source(source_id: str) -> bool:
-    result = get_mongo()["sources"].delete_one({"id": source_id})
+async def delete_source(source_id: str) -> bool:
+    result = await get_mongo()["sources"].delete_one({"id": source_id})
     return result.deleted_count > 0
