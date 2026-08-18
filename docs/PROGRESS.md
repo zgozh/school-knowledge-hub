@@ -31,15 +31,26 @@
 | B2 爬虫引擎 | 引擎+增量去重（URL/内容哈希+simhash） | 108023e |
 | B3 解析模块 | trafilatura + LLM 兜底 | 334787b |
 | B4 打标模块 | 一级规则 + 专题域 LLM 批量 | 8ac7abe |
+| B5 时效模块 | 截止日期识别 + 默认有效期 | 4776b32 |
+| B6 切分+入库 | 幂等先删后插 + MinIO 降级 | 7895546 |
+| B7 调度状态机 | 任务状态机 + APScheduler + 采集源存储 | 2150421 |
+| B8 管理端 API | 采集源/任务/知识库/统计/到期检测 + main | 324e874 |
+| B 修复 | 采集源 CRUD motor 补 await（评审抓到） | f57110f |
+| C1 混合检索 | 双路融合 + 时间衰减 + 过期降权 | 2845ce4 |
+| C2 重排 | reranker 精排 + 断崖截断 + 降级 | d58892f |
+| C3 生成 | 提示词 + LLM 主备降级流式 | c7b3884 |
+| C4 问答 API | /chat SSE + 来源引用 + 问答日志 | 33bbb53 |
+| C 收尾 | compose 追加 collector/qa-api 服务 | 292e0b6 |
 
-**测试状态：14 passed**（tests/ 下 test_shared/test_adapters/test_dedup/test_engine/test_parser/test_tagger）
+**测试状态：33 passed**。**后端 Plan 1 全部完成**（阶段 A/B/C 共 17 任务 + 2 处评审修复）。
+
+冒烟验证记录：model_server `/health` ✅；collector 采集源 CRUD 全链路 ✅；qa_api `/health` ✅、`/chat` SSE 返回 `event: empty`（模型服务不在时降级诚实回答）✅。
 
 ### 待执行 ⏳
 
-1. **批次 2（B5~B8）**：B5 时效推断、B6 切分+三写入库（幂等）、B7 任务状态机+APScheduler、B8 管理端 API+main。简报与步骤见 Plan 1 对应章节。
-2. **批次 3（C1~C4）**：C1 混合检索、C2 重排+断崖截断、C3 生成+主备降级、C4 /chat SSE。派发方式同批次 2。
-3. **Plan 2**：前端计划（管理端+问答端，Vue3+Element Plus，kimi-k3 派发）——**尚未编写**。
-4. **Plan 3**：模拟数据脚本 + 集成测试 + 打包交付——**尚未编写**。
+1. **Plan 2（前端）**：管理端 + 问答端（Vue3 + Element Plus + markstream-vue，SSE 对接），派 **kimi-k3**——**计划尚未编写**。
+2. **Plan 3**：模拟数据脚本（六大专题域）+ 集成测试 + 打包交付——**尚未编写**。
+3. **端到端联调**：真实采集（gzhu/gznews）→ 入库 → 问答全链路（需 model_server 启动 + BGE 权重路径正确）。
 
 ## 环境状态（本机开发）
 
