@@ -43,7 +43,32 @@ services:
     volumes:
       - ${BGE_M3_LOCAL:-D:/ai_models/huggingface_cache/bge-m3/models/BAAI--bge-m3/snapshots/master}:/models/bge-m3
       - ${RERANKER_LOCAL:-D:/ai_models/modelscope_cache/models/BAAI--bge-reranker-large/snapshots/master}:/models/bge-reranker-large
-  # collector 与 qa-api 服务在 Task B8 / C4 补 Dockerfile 后追加
+  collector:
+    build: ./collector
+    ports: ["8002:8002"]
+    environment:
+      MILVUS_URI: http://milvus:19530
+      MONGO_URI: mongodb://mongo:27017
+      MINIO_ENDPOINT: minio:9000
+      EMBED_SERVICE_URL: http://model-server:8001
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+    env_file:
+      - .env
+    depends_on: [milvus, mongo, minio, model-server]
+  qa-api:
+    build: ./qa_api
+    ports: ["8003:8003"]
+    environment:
+      MILVUS_URI: http://milvus:19530
+      MONGO_URI: mongodb://mongo:27017
+      EMBED_SERVICE_URL: http://model-server:8001
+      RERANK_SERVICE_URL: http://model-server:8001
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+    env_file:
+      - .env
+    depends_on: [milvus, mongo, model-server]
 volumes:
   etcd_data:
   minio_data:
