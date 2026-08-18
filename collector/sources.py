@@ -26,16 +26,16 @@ class SourceConfig:
                             interval_minutes=d.get("interval_minutes", 360))
 
 
-def list_sources() -> list[SourceConfig]:
+async def list_sources() -> list[SourceConfig]:
     db = get_mongo()
     docs = db["sources"].find({"enabled": True})
-    return [SourceConfig.from_dict(d) for d in docs]
+    return [SourceConfig.from_dict(d) async for d in docs]
 
 
-def list_all_sources() -> list[SourceConfig]:
+async def list_all_sources() -> list[SourceConfig]:
     db = get_mongo()
     docs = db["sources"].find()
-    return [SourceConfig.from_dict(d) for d in docs]
+    return [SourceConfig.from_dict(d) async for d in docs]
 
 
 def save_source(cfg: SourceConfig) -> str:

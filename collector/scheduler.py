@@ -10,18 +10,18 @@ logger = get_logger("collector.scheduler")
 _scheduler: AsyncIOScheduler | None = None
 
 
-def start_scheduler() -> None:
+async def start_scheduler() -> None:
     global _scheduler
     if _scheduler is not None:
         return
     _scheduler = AsyncIOScheduler()
-    for source in list_sources():
+    for source in await list_sources():
         _scheduler.add_job(
             run_collection_task, IntervalTrigger(minutes=source.interval_minutes),
             args=[source], id=f"collect-{source.id}", replace_existing=True,
         )
     _scheduler.start()
-    logger.info("调度器已启动，共 %d 个采集源", len(list_sources()))
+    logger.info("调度器已启动，共 %d 个采集源", len(_scheduler.get_jobs()))
 
 
 def stop_scheduler() -> None:
