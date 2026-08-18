@@ -1,0 +1,51 @@
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.14
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    volumes:
+      - etcd_data:/etcd
+  minio:
+    image: minio/minio:latest
+    command: minio server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports: ["9000:9000", "9001:9001"]
+    volumes:
+      - minio_data:/data
+  milvus:
+    image: milvusdb/milvus:v2.4.15
+    command: ["milvus", "run", "standalone"]
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MINIO_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+    ports: ["19530:19530", "9091:9091"]
+    depends_on: [etcd, minio]
+    volumes:
+      - milvus_data:/var/lib/milvus
+  mongo:
+    image: mongo:7
+    ports: ["27017:27017"]
+    volumes:
+      - mongo_data:/data/db
+  model-server:
+    build: ./model_server
+    ports: ["8001:8001"]
+    environment:
+      BGE_M3_PATH: /models/bge-m3
+      RERANKER_PATH: /models/bge-reranker-large
+    volumes:
+      - ${BGE_M3_LOCAL:-D:/ai_models/huggingface_cache/bge-m3/models/BAAI--bge-m3/snapshots/master}:/models/bge-m3
+      - ${RERANKER_LOCAL:-D:/ai_models/modelscope_cache/models/BAAI--bge-reranker-large/snapshots/master}:/models/bge-reranker-large
+  # collector 与 qa-api 服务在 Task B8 / C4 补 Dockerfile 后追加
+volumes:
+  etcd_data:
+  minio_data:
+  milvus_data:
+  mongo_data:
