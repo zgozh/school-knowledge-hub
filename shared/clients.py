@@ -2,7 +2,7 @@
 from functools import lru_cache
 
 from minio import Minio
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from openai import AsyncOpenAI
 from pymilvus import MilvusClient
 
