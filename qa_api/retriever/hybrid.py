@@ -150,3 +150,16 @@ async def hybrid_search(query: str, category: str | None = None, topics: list[st
 
     chunks.sort(key=lambda c: -c.score)
     return chunks[:top_k]
+
+
+def cliff_cutoff(chunks: list[ScoredChunk], ratio: float | None = None) -> list[ScoredChunk]:
+    """断崖截断：相邻分数骤降（跌幅超过 ratio）即截断。至少保留 1 条。"""
+    ratio = settings.cliff_cutoff_ratio if ratio is None else ratio
+    if not chunks:
+        return []
+    kept = [chunks[0]]
+    for prev, cur in zip(chunks, chunks[1:]):
+        if cur.score < prev.score * (1 - ratio):
+            break
+        kept.append(cur)
+    return kept
