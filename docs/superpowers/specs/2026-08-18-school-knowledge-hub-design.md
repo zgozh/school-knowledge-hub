@@ -110,7 +110,7 @@
 
 | 组件 | 职责 |
 |------|------|
-| 检索模块 | Milvus hybrid（dense COSINE 0.8 + sparse IP 0.2，norm_score 归一化）+ 分类/专题域元数据过滤 + 时间衰减 + 过期降权 |
+| 检索模块 | Milvus hybrid（dense COSINE 0.8 + sparse IP 0.2，norm_score 归一化）+ 分类/专题域元数据过滤 + 时间衰减（按发布天数指数衰减，半衰期 30 天，系数配置化）+ 过期降权（过期文档衰减加倍并打过期标记） |
 | 重排模块 | bge-reranker-large 精排（召回 top10 → 断崖截断） |
 | 生成模块 | DeepSeek 主 / DashScope 降级，SSE 流式，提示词模板外置 |
 | 引用组装 | 来源卡片（标题/栏目/日期/链接/MinIO 快照回溯） |
