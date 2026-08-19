@@ -2,9 +2,37 @@
 from datetime import datetime
 
 from shared.clients import get_mongo
+from shared.config import settings
 from shared.logging import get_logger
 
 logger = get_logger("collector.knowledge")
+
+
+async def get_document_detail(doc_id: str, mongo_db=None, milvus=None) -> dict | None:
+    """单篇详情：Mongo 元数据 + 从 Milvus 向量块拼回正文。
+
+    正文只存于 Milvus 分块（Mongo 元数据不冗余存全文），按 chunk_idx 排序拼接；
+    Milvus 读取失败降级为空正文（不阻断详情展示）。
+    """
+    from shared.clients import get_milvus, get_mongo
+
+    db = mongo_db or get_mongo()
+    doc = await db["documents"].find_one({"doc_id": doc_id})
+    if doc is None:
+        return None
+    doc.pop("_id", None)
+
+    milvus = milvus or get_milvus()
+    chunks: list[str] = []
+    try:
+        rows = milvus.query(settings.milvus_collection, filter=f'doc_id == "{doc_id}"',
+                            output_fields=["chunk_idx", "text"])
+        rows = sorted(rows, key=lambda r: r.get("chunk_idx", 0))
+        chunks = [r.get("text", "") for r in rows]
+    except Exception as e:
+        logger.warning("读取正文失败(降级): %s", e)
+    doc["content"] = "\n".join(chunks)
+    return doc
 
 
 async def query_documents(status: str | None = None, category: str | None = None, topic: str | None = None,

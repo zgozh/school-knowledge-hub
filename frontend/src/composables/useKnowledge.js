@@ -31,5 +31,9 @@ export function useKnowledge() {
     return adminApi.expiryCheck()
   }
 
-  return { items, total, loading, error, load, setStatus, expiryCheck }
+  async function getDetail(docId) {
+    return adminApi.getKnowledgeDetail(docId)
+  }
+
+  return { items, total, loading, error, load, setStatus, expiryCheck, getDetail }
 }

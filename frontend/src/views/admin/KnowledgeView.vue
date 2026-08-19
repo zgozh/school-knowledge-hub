@@ -41,7 +41,7 @@
       <el-table v-loading="loading" :data="visibleItems" row-key="doc_id" empty-text="暂无符合条件的知识资产">
         <el-table-column label="标题" min-width="250" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-link :href="row.url" target="_blank" type="primary">{{ row.title || '未命名文档' }}</el-link>
+            <el-button link type="primary" class="title-btn" @click="openDetail(row)">{{ row.title || '未命名文档' }}</el-button>
           </template>
         </el-table-column>
         <el-table-column label="分类" width="110">
@@ -81,6 +81,29 @@
         <el-pagination v-model:current-page="page" v-model:page-size="pageSize" :total="total" background layout="sizes, prev, pager, next" :page-sizes="[10, 20, 50]" @current-change="loadPage" @size-change="onSizeChange" />
       </div>
     </el-card>
+
+    <el-drawer v-model="detailVisible" :title="detail?.title || '文档详情'" size="48%">
+      <div v-loading="detailLoading" class="detail-body">
+        <template v-if="detail">
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="分类">{{ detail.category || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="专题域">{{ (detail.topics || []).join('、') || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="发布部门">{{ detail.department || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="发布日期">{{ formatDate(detail.publish_date) }}</el-descriptions-item>
+            <el-descriptions-item label="有效期至">{{ detail.expire_at || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="状态">{{ STATUS_TEXT[detail.status] || detail.status }}</el-descriptions-item>
+            <el-descriptions-item label="来源站点">{{ detail.source_site || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="栏目">{{ detail.column || '-' }}</el-descriptions-item>
+          </el-descriptions>
+          <el-divider content-position="left">正文</el-divider>
+          <p class="detail-content">{{ detail.content || '（正文读取失败或缺失）' }}</p>
+          <div class="detail-actions">
+            <el-button v-if="!isDemoUrl(detail.url)" type="primary" plain @click="openOrigin(detail.url)">打开原文</el-button>
+            <el-tag v-else type="info">模拟数据（无外部原文）</el-tag>
+          </div>
+        </template>
+      </div>
+    </el-drawer>
   </section>
 </template>
 
@@ -90,10 +113,13 @@ import { ElMessage } from 'element-plus'
 import { useKnowledge } from '../../composables/useKnowledge'
 import { CATEGORIES, TOPICS, STATUS_TEXT, STATUS_TYPE, formatDate } from '../../utils/format'
 
-const { items, total, loading, error, load, setStatus, expiryCheck } = useKnowledge()
+const { items, total, loading, error, load, setStatus, expiryCheck, getDetail } = useKnowledge()
 const page = ref(1)
 const pageSize = ref(20)
 const checking = ref(false)
+const detailVisible = ref(false)
+const detailLoading = ref(false)
+const detail = ref(null)
 const filters = reactive({ keyword: '', status: '', category: '', topic: '' })
 const visibleItems = computed(() => {
   const keyword = filters.keyword.trim().toLowerCase()
@@ -123,6 +149,24 @@ async function onExpiryCheck() {
     await loadPage()
   } catch (e) { ElMessage.error(e.message) } finally { checking.value = false }
 }
+function isDemoUrl(url) {
+  return (url || '').startsWith('https://demo.gzhu.edu.cn/')
+}
+async function openDetail(row) {
+  detailVisible.value = true
+  detailLoading.value = true
+  detail.value = null
+  try {
+    detail.value = await getDetail(row.doc_id)
+  } catch (e) {
+    ElMessage.error(e.message)
+  } finally {
+    detailLoading.value = false
+  }
+}
+function openOrigin(url) {
+  window.open(url, '_blank')
+}
 onMounted(loadPage)
 </script>
 
@@ -135,5 +179,9 @@ onMounted(loadPage)
 .filter-select { width: 150px; }
 .pagination-row { padding-top: 16px; }
 .muted { color: #94a3b8; font-size: 13px; }
+.title-btn { padding: 0; }
+.detail-body { min-height: 200px; }
+.detail-content { white-space: pre-wrap; color: #334155; line-height: 1.8; }
+.detail-actions { margin-top: 16px; }
 @media (max-width: 900px) { .filter-card :deep(.el-form) { display: flex; flex-wrap: wrap; } .filter-select { width: 130px; } }
 </style>

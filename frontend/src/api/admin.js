@@ -19,6 +19,7 @@ export const adminApi = {
   },
   setDocStatus: (docId, status) =>
     request(`/admin-api/api/admin/knowledge/${docId}/status`, { method: 'POST', body: { status } }),
+  getKnowledgeDetail: (docId) => request(`/admin-api/api/admin/knowledge/${docId}`),
   // 统计与治理
   stats: () => request('/admin-api/api/admin/stats'),
   expiryCheck: () => request('/admin-api/api/admin/expiry-check', { method: 'POST' }),
