@@ -10,7 +10,10 @@ class FakeMilvus:
         self.deleted = []
 
     def has_collection(self, name):
-        return True  # 模拟集合已存在（ensure_collection 短路）
+        return True  # 模拟集合已存在（ensure_collection 走"确保加载"分支）
+
+    def load_collection(self, name):
+        pass  # 模拟已加载
 
     def delete(self, collection_name, filter, **kwargs):
         self.deleted.append(filter)
