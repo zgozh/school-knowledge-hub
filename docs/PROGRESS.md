@@ -55,7 +55,7 @@
 | F2 演示清单 | 20 题清单（六大专题域+综合） | a96cf02 |
 | F3 交付文档 | 作品说明书 + 演示视频脚本 + PROGRESS 收尾 | 见最新 commit |
 
-**测试状态：后端 53 passed（含真实 LLM 集成段）；前端 build 0 + vitest 9 passed；20 题来源引用率 20/20 = 100%**。**全部阶段完成**（Plan 1 阶段 A/B/C 17 任务、前端 Plan 2 F1~F7、Plan 3 D/E/F 8 任务）；全栈 compose 一条命令起实测通过。
+**测试状态：后端 73 passed（含真实 LLM 集成段 + 人工入库）；前端 build ✅ + vitest 13 passed；20 题来源引用率 20/20 = 100%**。**全部阶段完成**（Plan 1 阶段 A/B/C 17 任务、前端 Plan 2 F1~F7、Plan 3 D/E/F 8 任务、人工入库 5 任务）；全栈 compose 一条命令起实测通过。
 
 冒烟验证记录：model_server `/health` ✅；collector 采集源 CRUD 全链路 ✅；qa_api `/health` ✅、`/chat` SSE 返回 `event: empty`（模型服务不在时降级诚实回答）✅；前端 5 路由全 200、build+vitest 通过 ✅。
 
@@ -114,6 +114,15 @@
 - **重大环境发现（双存储，务必知晓）**：本机 127.0.0.1:9000/19530/27017 由 `wslrelay.exe`（WSL2）独占中继 → 宿主机进程（uv run）连 localhost 打的是 **WSL 里的真实存储**（知识库数据在那边）；Docker Desktop compose 起的是**另一套独立存储**（容器网络内部互通，全新）。两套各自自洽：宿主机三服务+真实库 / compose 全栈+容器库。宿主机要打容器库需绕 127.0.0.1（用局域网 IP 或进容器 exec）。**演示（compose 一条命令）默认用容器库，从空库起：播种+建源+采集即可复现 20/20。**
 - 派活记录：F 批按计划主会话直接执行（未派 workflow）。
 - **项目收官结论**：Plan 1/2/3 全部完成，8 任务 TDD 逐项核验磁盘/测试/commit 通过；剩余可选事项见「待执行」第 4 条。
+
+## 人工数据入库（2026-08-20，录入+上传+编辑/删除 ✅）
+
+- 背景：补齐第三条入库路径——人工主动补充知识（此前仅自动采集 + 脚本播种）。spec `docs/superpowers/specs/2026-08-20-manual-data-ingestion-design.md`、plan `docs/superpowers/plans/2026-08-20-manual-data-ingestion.md`。
+- 5 任务 TDD（每任务最小改动 commit）：`8493a56` ingest_document 显式 doc_id → `9ba6953` file_parser（pypdf/python-docx）→ `ed153b4` manual.py 编排（create/update 幂等覆盖/delete 清三处）→ `cf2a85f` manual API（parse-file/documents 增删改）+ 路由 + 容器依赖（含 python-multipart）→ `a1375cd` 前端表单/编辑/删除（request 支持 FormData）。
+- 数据标识：`source_site="manual"`、doc_id=`uuid4().hex[:16]` 稳定复用、无来源 url 占位 `manual://{doc_id}`（前端不跳转）、分类/专题未填走规则、publish_date 空回退今天。
+- 后端 +18 用例（**73 passed**）；前端 +2 用例（**13 passed**）+ build ✅。
+- 真跑验收（容器 rebuild 后）：录入 → source_site=manual/url 保留 → 详情 200；编辑复用 doc_id 正文更新（含「寒暑假」）；上传 txt 解析+入库+删除（deleted:true + 404）；问答「图书馆借阅规则」召回 manual 文档附来源（lib.gzhu.edu.cn/rules.htm）。
+- 派活记录：按 AGENTS.md 先派 workflow（glm-5.3 后端 4 任务），再次空转（4 agent 全 null、仅 Task1 半途写测试）；主会话接管逐任务 TDD 完成。**再次印证：workflow 派 glm-5.3 在本项目持续空转，后续功能建议主会话直接执行。**
 
 ## 环境状态（本机开发）
 
