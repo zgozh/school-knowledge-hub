@@ -71,6 +71,16 @@
 
 - `6056096`：**SSE CRLF 修复**——后端 sse_starlette 发 `\r\n` 换行，前端 sseFetch 只按 `\n\n` 分块导致浏览器端事件积压静默失败（curl 直测正常掩盖了此 bug）。sseFetch 读流时统一 `replace(/\r\n?/g,'\n')` 再分块，补 CRLF 单测（前端 8 passed）。
 - `81a7406`：**问答端补管理端入口**——首页页头加「管理端」链接跳 `/admin`（此前双端无互跳入口）。TDD：先写组件测试看它失败再实现；新增 `frontend/tests/chatView.test.js`（@vue/test-utils + jsdom，前端 9 passed）。
+
+## Plan 3 执行（2026-08-19 晚，阶段 D 完成）
+- 派活记录：workflow 三连（D1 成功、D2/D3 空转零产出→主会话接管补做）；环境重启（用户三服务+存储已停：Docker Desktop 停→DSH 侧重启存储容器 + 本机起 model_server:8001）。
+- `bb72770`（D1 子代理）：collector 补 `/api/health` + 调度器注册/tasks API 自动化测试（6 用例）。
+- `cd9acbc`（D2 主会话）：打标规则词表扩充 + 专题域规则兜底 `rule_tag_topics`（tasks.py 中 `topics_map.get(url) or rule_tag_topics(...)`）。
+- `599a6cd`（D3 主会话）：六大专题域模拟播种 `scripts/seed_demo.py`（内置模板 18 篇，幂等先删后插）。
+- `0f1b426`（真跑暴露的存量 bug，TDD 修复）：MinIO 快照上传必须传流对象（`io.BytesIO`）而非 bytes（`'bytes' object has no attribute 'read'`）。
+- `cd473d4`：seed 入口单事件循环（两次 `asyncio.run` 撞 motor 全局执行器）。
+- **D 批验收证据**：复采真跑 8/8 成功且 MinIO 快照无缺失；Mongo `documents=26 with_topics=26 snapshot_missing=0`（8 真实 gzhu + 18 演示，专题全部非空）；seed 两轮 18=18 幂等；后端全量 48 passed。
+- 环境移交注意：本会话起的 storage+model_server 仍在运行；用户自起三服务时直接 `uv run uvicorn ...` 即可（8001-8003 当前空闲），重启后 collector 即带 D2 规则兜底。
 - **环境新事实**：DSH 沙箱 workspace-write 模式**拒绝修改/删除非本会话创建的既有文件**（node_modules 由用户早上安装，pnpm add 重链时反复「Failed to remove」挂死）；会话文件策略升 danger-full-access 后安装 3.5s 完成。凡需动既有 node_modules/构建产物的命令，需该策略。子代理（kimi-k3）本轮再次空转零产出（仅留 .pnpm-store 垃圾），主会话已接管完成。
 - 运行移交：三后端服务已由用户自行启动验证（DSH 侧已停、端口释放）。知识库保留 8 篇 gzhu 真实文档 + 已启用采集源 f1bfb927f134（每 6h 自动增量采集）。
 - **新会话接手一句话**：读本文件 + `AGENTS.md` + Plan 文件，然后从「Plan 3」开始。
