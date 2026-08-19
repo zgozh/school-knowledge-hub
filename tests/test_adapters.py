@@ -1,5 +1,6 @@
 from collector.crawler.base import ArticleRef
 from collector.crawler.gzhu import GUZhuAdapter
+from collector.crawler.gznews import GUNewsAdapter
 
 LIST_HTML = """
 <html><body><div class="list_news"><ul>
@@ -16,6 +17,18 @@ DETAIL_HTML = """
 <p>来源：教务处</p>
 <p>根据《广州大学学生管理规定》，现对曾玮等14名学生给予退学处理预公告。</p>
 </div></body></html>
+"""
+
+NEWS_LIST_HTML = """
+<html><body><div class="news-list"><ul>
+<li><a href="info/1043/5001.htm" title="我校学子在2026年全国大学生数学建模竞赛中获佳绩">我校学子在2026年全国大学生数学建模竞赛中获佳绩</a><span class="date">2026-04-20</span></li>
+<li><a href="info/1043/5002.htm" title="广州大学举行2026届毕业典礼">广州大学举行2026届毕业典礼</a><span class="date">2026-04-19</span></li>
+</ul></div></body></html>
+"""
+
+NEWS_DETAIL_HTML = """
+<html><head><title>我校学子在2026年全国大学生数学建模竞赛中获佳绩</title></head>
+<body><h1>我校学子在2026年全国大学生数学建模竞赛中获佳绩</h1><p>2026-04-20</p><p>正文内容</p></body></html>
 """
 
 
@@ -35,3 +48,23 @@ def test_gzhu_parse_detail():
     assert raw.url == ref.url
     assert raw.column == "通知公告"
     assert raw.source_site == "gzhu"
+
+
+def test_gznews_parse_list():
+    adapter = GUNewsAdapter()
+    refs = adapter.parse_list(NEWS_LIST_HTML, "https://news.gzhu.edu.cn/")
+    assert len(refs) == 2
+    assert refs[0].title == "我校学子在2026年全国大学生数学建模竞赛中获佳绩"
+    assert refs[0].publish_date == "2026-04-20"
+    assert refs[0].url.startswith("https://news.gzhu.edu.cn/")
+
+
+def test_gznews_parse_detail():
+    adapter = GUNewsAdapter()
+    ref = ArticleRef(url="https://news.gzhu.edu.cn/info/1043/5001.htm",
+                     title="我校学子在2026年全国大学生数学建模竞赛中获佳绩", publish_date="2026-04-20")
+    raw = adapter.parse_detail(NEWS_DETAIL_HTML, ref)
+    assert raw.url == ref.url
+    assert raw.column == "新闻动态"
+    assert raw.source_site == "gznews"
+    assert raw.publish_date == "2026-04-20"
