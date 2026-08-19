@@ -81,6 +81,12 @@
 - `cd473d4`：seed 入口单事件循环（两次 `asyncio.run` 撞 motor 全局执行器）。
 - **D 批验收证据**：复采真跑 8/8 成功且 MinIO 快照无缺失；Mongo `documents=26 with_topics=26 snapshot_missing=0`（8 真实 gzhu + 18 演示，专题全部非空）；seed 两轮 18=18 幂等；后端全量 48 passed。
 - 环境移交注意：本会话起的 storage+model_server 仍在运行；用户自起三服务时直接 `uv run uvicorn ...` 即可（8001-8003 当前空闲），重启后 collector 即带 D2 规则兜底。
+
+## Plan 3 阶段 E 完成（2026-08-19 深夜）
+- `b2c5465`（E1 子代理）：`tests/integration/test_full_pipeline.py`（mock 站点 5 篇真跑：采集→打标→三写入库→混合检索→来源→LLM 问答）+ pyproject 注册 integration marker。
+- `e9f5777`（E2 子代理）：`tests/test_degradation.py`（reranker 挂原序兜底 / LLM 主备切换 / 主备全挂报错，3 用例，回归锁定）。
+- `530f71c`（E1 真跑暴露的测试隔离问题，主会话修复）：motor 单例跨 pytest-asyncio 函数级循环在 Windows 崩（Event loop is closed）→ fixture 里 `get_mongo.cache_clear()`。
+- **E 批验收证据**：E1 真跑（注入用户级 DEEPSEEK_API_KEY）2 passed 含真实 LLM 生成；E2 3 passed；后端全量 52 passed + 1 skipped（skip=无 key 时的 LLM 段，设计使然）。
 - **环境新事实**：DSH 沙箱 workspace-write 模式**拒绝修改/删除非本会话创建的既有文件**（node_modules 由用户早上安装，pnpm add 重链时反复「Failed to remove」挂死）；会话文件策略升 danger-full-access 后安装 3.5s 完成。凡需动既有 node_modules/构建产物的命令，需该策略。子代理（kimi-k3）本轮再次空转零产出（仅留 .pnpm-store 垃圾），主会话已接管完成。
 - 运行移交：三后端服务已由用户自行启动验证（DSH 侧已停、端口释放）。知识库保留 8 篇 gzhu 真实文档 + 已启用采集源 f1bfb927f134（每 6h 自动增量采集）。
 - **新会话接手一句话**：读本文件 + `AGENTS.md` + Plan 文件，然后从「Plan 3」开始。
