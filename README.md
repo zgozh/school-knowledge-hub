@@ -46,12 +46,26 @@
 
 ### 第 1 步：准备模型权重
 
-下载两个模型到本机任意目录（例如 `D:\ai_models\bge-m3`、`D:\ai_models\bge-reranker-large`）：
+下载两个模型到本机（任选一种方式，国内推荐 ModelScope）：
 
-- BGE-M3：`BAAI/bge-m3`
-- 重排：`BAAI/bge-reranker-large`
+**方式 A：ModelScope（国内快，推荐）**
 
-记下它们的**宿主机绝对路径**（第 2 步要用）。
+```powershell
+pip install modelscope
+modelscope download --model BAAI/bge-m3 --local_dir D:/ai_models/bge-m3
+modelscope download --model BAAI/bge-reranker-large --local_dir D:/ai_models/bge-reranker-large
+```
+
+**方式 B：HuggingFace + 国内镜像**
+
+```powershell
+pip install -U "huggingface_hub[cli]"
+$env:HF_ENDPOINT="https://hf-mirror.com"
+huggingface-cli download BAAI/bge-m3 --local-dir D:/ai_models/bge-m3
+huggingface-cli download BAAI/bge-reranker-large --local-dir D:/ai_models/bge-reranker-large
+```
+
+记下两个目录的**宿主机绝对路径**（第 2 步填入 `BGE_M3_LOCAL` / `RERANKER_LOCAL`）：上例中 BGE-M3 为 `D:/ai_models/bge-m3`、重排为 `D:/ai_models/bge-reranker-large`。
 
 ### 第 2 步：配置环境变量
 
@@ -65,11 +79,13 @@ copy .env.example .env
 | 变量 | 必填 | 说明 |
 |------|------|------|
 | `DEEPSEEK_API_KEY` | ✅ | 问答生成的 DeepSeek Key（写进 `.env`，`docker compose up` 即自动带上） |
-| `BGE_M3_LOCAL` | ✅ | **宿主机** BGE-M3 权重目录绝对路径（compose 挂载用，需自行添加到 `.env`） |
+| `BGE_M3_LOCAL` | ✅ | **宿主机** BGE-M3 权重目录绝对路径（compose 挂载用，改为第 1 步下载的目录） |
 | `RERANKER_LOCAL` | ✅ | **宿主机** bge-reranker-large 权重目录绝对路径（同上） |
 | `DASHSCOPE_API_KEY` | ⬜ | 备援 LLM Key，可留空 |
 
-> ⚠️ **注意路径命名**：`.env.example` 里的 `BGE_M3_PATH`/`RERANKER_PATH` 是**容器内**固定路径（`/models/...`，勿改）；宿主机路径由 `BGE_M3_LOCAL`/`RERANKER_LOCAL` 指定（`.env.example` 未含这两项，请自行添加）。也可直接改 `docker-compose.yml` 里 model-server 的 `volumes` 默认值。
+> ⚠️ **注意路径命名**：`.env.example` 里的 `BGE_M3_PATH`/`RERANKER_PATH` 是**容器内**固定路径（`/models/...`，勿改）；宿主机路径由 `BGE_M3_LOCAL`/`RERANKER_LOCAL` 指定（`.env.example` 已含这两项，改成你的实际路径即可）。也可直接改 `docker-compose.yml` 里 model-server 的 `volumes` 默认值。
+
+> 💡 **配置说明**：所有配置项（存储地址、模型路径、API Key、检索参数、端口、超时）都在 `.env` 里改——`shared/config.py` 全部通过 `os.getenv` 读取，`docker-compose.yml` 也引用 `.env` 变量。`.env` 已加入 `.gitignore`，不会进 git；仓库只提交 `.env.example` 模板，复制 `copy .env.example .env` 后改值即可。
 
 ### 第 3 步：启动
 
