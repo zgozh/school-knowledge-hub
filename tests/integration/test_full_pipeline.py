@@ -61,6 +61,10 @@ def make_engine() -> CrawlEngine:
 
 @pytest.fixture(autouse=True)
 async def isolated_storage(monkeypatch):
+    # 每个测试跑在独立的函数级事件循环里（pytest-asyncio），而 get_mongo 是进程级 lru_cache 单例：
+    # 跨循环复用同一 motor 客户端在 Windows Proactor 下会报 "Event loop is closed"。清理缓存，
+    # 让每个测试在自己的循环内新建客户端（生产单进程单循环不受影响）。
+    get_mongo.cache_clear()
     monkeypatch.setattr(settings, "milvus_collection", COLLECTION)
     milvus = get_milvus()
     if milvus.has_collection(COLLECTION):
