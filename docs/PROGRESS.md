@@ -42,15 +42,15 @@
 | C4 问答 API | /chat SSE + 来源引用 + 问答日志 | 33bbb53 |
 | C 收尾 | compose 追加 collector/qa-api 服务 | 292e0b6 |
 
-**测试状态：33 passed**。**后端 Plan 1 全部完成**（阶段 A/B/C 共 17 任务 + 2 处评审修复）。
+**测试状态：35 passed**。**后端 Plan 1 全部完成**（阶段 A/B/C 共 17 任务 + 2 处评审修复）；**前端 Plan 2 全部完成**（F1~F7，每任务独立 commit）。
 
-冒烟验证记录：model_server `/health` ✅；collector 采集源 CRUD 全链路 ✅；qa_api `/health` ✅、`/chat` SSE 返回 `event: empty`（模型服务不在时降级诚实回答）✅。
+冒烟验证记录：model_server `/health` ✅；collector 采集源 CRUD 全链路 ✅；qa_api `/health` ✅、`/chat` SSE 返回 `event: empty`（模型服务不在时降级诚实回答）✅；前端 5 路由全 200、build+vitest 通过 ✅。
 
 ### 待执行 ⏳
 
-1. **Plan 2（前端）**：管理端 + 问答端（Vue3 + Element Plus + markstream-vue，SSE 对接），统一派 **gpt-5.6-sol**——计划已编写，F1/F2 已由主会话完成。
-2. **Plan 3**：模拟数据脚本（六大专题域）+ 集成测试 + 打包交付——**尚未编写**。
-3. **端到端联调**：真实采集（gzhu/gznews）→ 入库 → 问答全链路（需 model_server 启动 + BGE 权重路径正确）。
+1. **Plan 3**：模拟数据脚本（六大专题域）+ 集成测试 + 打包交付——**尚未编写**。
+2. **端到端联调**：真实采集（gzhu/gznews）→ 入库 → 问答全链路（需 model_server 启动 + BGE 权重路径正确）。
+3. **评审遗留**：B7 scheduler 注册 / B8 tasks API 无自动化测试（仅冒烟），并入 Plan 3 集成测试覆盖。
 
 ## 环境状态（本机开发）
 
@@ -65,8 +65,8 @@
 
 ## 派活执行记录（经验沉淀）
 
-- 历史批次曾使用 glm-5.3/kimi-k3；根据最新项目决策，后续所有调度与代码派发统一使用 **gpt-5.6-sol**，旧模型路由不再生效。
-- 前端 F1/F2 workflow 曾返回空结果，但实际留下了初始化与测试；主会话已接管完成 F1/F2 并提交 `3e4032e`。此前 F3/F4 派发结果待核验，后续统一用 gpt-5.6-sol 继续。
+- 模型路由最终约定（用户 2026-08-19 拍板）：主会话 deepseek-v4-pro（调度/脚手架/规划/评审/集成）；后端 glm-5.3；前端 kimi-k3。已写入 AGENTS.md + ADR-011 + model-routing skill（含「验收铁律」：报告完成≠通过，逐任务核验文件/测试/commit）。
+- **「假通过」事故记录**：多轮 workflow 返回 null/空报告但部分 agent 实际半途产出；F4/F5/F6 曾显示派发完成实为壳。处理：主会话接管补做 + 全任务逐项核查（发现 gznews 无测试覆盖已补）。**教训：每个派发批次完成后必须逐任务核验磁盘状态，不以 workflow 返回值/子代理报告为验收依据。**
 - **子代理失败后主会话直接接管补做，不反复重派空转**。已发现的计划实现注意点：motor 为异步驱动（所有 Mongo 调用必须 await）；selectolax 的 css() 对逗号选择器不去重（用单选择器等价实现）。
 
 ## 验证命令速查
