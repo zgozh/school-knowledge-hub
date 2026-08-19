@@ -49,8 +49,22 @@
 ### 待执行 ⏳
 
 1. **Plan 3**：模拟数据脚本（六大专题域）+ 集成测试 + 打包交付——**尚未编写**。
-2. **端到端联调**：真实采集（gzhu/gznews）→ 入库 → 问答全链路（需 model_server 启动 + BGE 权重路径正确）。
+2. **打标质量优化**：8 篇真实采集分类全部 fallback 为"通知公告"、专题为空（规则词表覆盖不足 + 当时 LLM 缺 key），需补规则词表并复采验证。
 3. **评审遗留**：B7 scheduler 注册 / B8 tasks API 无自动化测试（仅冒烟），并入 Plan 3 集成测试覆盖。
+
+## 端到端联调记录（2026-08-19 实测跑通 ✅）
+
+真实采集 gzhu 通知公告 8 篇 → 解析/打标 → Milvus+Mongo+MinIO 入库 → 问答全链路（chunk→sources→done）出带来源引用答案。联调暴露并修复 **7 个单元测试绿但真跑挂的 bug**（commit db50235→05f374f）：
+
+1. 爬虫引擎缺浏览器 UA → 官网 403
+2. gzhu 文章 URL 拼到列表页目录 → 404（补测试断言）
+3. /embed 返回 numpy.float32 无法 JSON 序列化
+4. ensure_collection 为零调用死代码（mock 测试绕过）→ Milvus 集合不存在
+5. MilvusClient 新版 create_index 需 prepare_index_params；已存在集合需确保 load
+6. FlagEmbedding 1.4.0 + transformers 5.x 接口漂移 → /rerank 手写交叉编码推理绕开
+7. dense IVF_FLAT nlist=128 对小数数据空召回 → 改 AUTOINDEX；rerank 冷启动超时 → 30s
+
+**关键环境事实**：DEEPSEEK_API_KEY 在 Windows 用户级环境变量中，DSH 沙箱进程不继承——DSH 起服务需先 `$env:DEEPSEEK_API_KEY=[Environment]::GetEnvironmentVariable('DEEPSEEK_API_KEY','User')`；用户自己开终端跑不受影响。transformers 需 4.52.x（uv 托管已装，5.x 会破坏 FlagEmbedding）。
 
 ## 环境状态（本机开发）
 
