@@ -78,6 +78,23 @@ describe('sseFetch', () => {
     expect(cb.onDone).toHaveBeenCalledTimes(1)
   })
 
+  it('服务端用 CRLF（\\r\\n）分隔的 SSE 也能正确解析', async () => {
+    const sse = [
+      'event: chunk\r\ndata: {"delta":"你好"}\r\n\r\n',
+      'event: chunk\r\ndata: {"delta":"，世界"}\r\n\r\n',
+      'event: done\r\ndata: {"query_id":"q3","elapsed_ms":1,"answer_len":5}\r\n\r\n',
+    ]
+    globalThis.fetch = mockFetch(sse)
+    const cb = makeCallbacks()
+
+    await sseFetch('/qa-api/api/chat', {}, cb)
+
+    expect(cb.onChunk).toHaveBeenCalledTimes(2)
+    expect(cb.onChunk).toHaveBeenNthCalledWith(1, '你好')
+    expect(cb.onDone).toHaveBeenCalledTimes(1)
+    expect(cb.onError).not.toHaveBeenCalled()
+  })
+
   it('empty 事件触发 onEmpty 并携带 message', async () => {
     globalThis.fetch = mockFetch(['event: empty\ndata: {"message":"未找到相关校务信息"}\n\n'])
     const cb = makeCallbacks()

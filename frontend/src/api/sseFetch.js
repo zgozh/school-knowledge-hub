@@ -35,6 +35,8 @@ export async function sseFetch(url, body, callbacks) {
     const { done, value } = await reader.read()
     if (done) break
     buffer += decoder.decode(value, { stream: true })
+    // SSE 规范允许 \n / \r\n / \r 换行；后端 sse_starlette 实际用 \r\n，统一归一化为 \n
+    buffer = buffer.replace(/\r\n?/g, '\n')
     let idx
     while ((idx = buffer.indexOf('\n\n')) !== -1) {
       const block = buffer.slice(0, idx)
