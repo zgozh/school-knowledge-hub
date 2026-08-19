@@ -5,6 +5,7 @@
         <h2>知识库管理</h2>
         <p>查看、筛选并治理采集后的校务知识资产。</p>
       </div>
+      <el-button type="primary" @click="openCreate">新增知识</el-button>
       <el-button type="primary" plain :loading="checking" @click="onExpiryCheck">到期检测</el-button>
     </div>
 
@@ -100,20 +101,70 @@
           <div class="detail-actions">
             <el-button v-if="!isDemoUrl(detail.url)" type="primary" plain @click="openOrigin(detail.url)">打开原文</el-button>
             <el-tag v-else type="info">模拟数据（无外部原文）</el-tag>
+            <el-button type="primary" plain @click="openEditFromDetail()">编辑</el-button>
+            <el-popconfirm title="确认删除该文档？" @confirm="onRemoveFromDetail()">
+              <template #reference><el-button type="danger" plain>删除</el-button></template>
+            </el-popconfirm>
           </div>
         </template>
       </div>
     </el-drawer>
+
+    <el-dialog v-model="formVisible" :title="formMode === 'create' ? '新增知识' : '编辑知识'" width="640px">
+      <el-form :model="form" label-width="90px">
+        <el-form-item v-if="formMode === 'create'" label="正文来源">
+          <el-radio-group v-model="sourceType">
+            <el-radio value="manual">手动录入</el-radio>
+            <el-radio value="upload">上传文件</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="formMode === 'create' && sourceType === 'upload'" label="文件">
+          <el-upload :auto-upload="false" :limit="1" accept=".pdf,.docx,.txt,.md" :on-change="onFileChange">
+            <el-button type="primary" plain>选择文件</el-button>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="标题" required>
+          <el-input v-model="form.title" placeholder="文档标题" />
+        </el-form-item>
+        <el-form-item label="正文" required>
+          <el-input v-model="form.content" type="textarea" :rows="8" placeholder="正文内容（可粘贴）" />
+        </el-form-item>
+        <el-form-item label="发布日期">
+          <el-date-picker v-model="form.publish_date" type="date" value-format="YYYY-MM-DD" placeholder="默认今天" />
+        </el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="form.category" clearable placeholder="未选则自动">
+            <el-option v-for="c in CATEGORIES" :key="c" :label="c" :value="c" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="专题域">
+          <el-select v-model="form.topics" multiple clearable placeholder="未选则自动">
+            <el-option v-for="t in TOPICS" :key="t" :label="t" :value="t" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="来源 URL">
+          <el-input v-model="form.url" placeholder="可选" />
+        </el-form-item>
+        <el-form-item label="发布部门">
+          <el-input v-model="form.department" placeholder="可选" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="formVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="onSubmit">保存</el-button>
+      </template>
+    </el-dialog>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { adminApi } from '../../api/admin'
 import { useKnowledge } from '../../composables/useKnowledge'
 import { CATEGORIES, TOPICS, STATUS_TEXT, STATUS_TYPE, formatDate } from '../../utils/format'
 
-const { items, total, loading, error, load, setStatus, expiryCheck, getDetail } = useKnowledge()
+const { items, total, loading, error, load, setStatus, expiryCheck, getDetail, create, update, remove } = useKnowledge()
 const page = ref(1)
 const pageSize = ref(20)
 const checking = ref(false)
@@ -150,7 +201,8 @@ async function onExpiryCheck() {
   } catch (e) { ElMessage.error(e.message) } finally { checking.value = false }
 }
 function isDemoUrl(url) {
-  return (url || '').startsWith('https://demo.gzhu.edu.cn/')
+  const u = url || ''
+  return u.startsWith('https://demo.gzhu.edu.cn/') || u.startsWith('manual://')
 }
 async function openDetail(row) {
   detailVisible.value = true
@@ -166,6 +218,60 @@ async function openDetail(row) {
 }
 function openOrigin(url) {
   window.open(url, '_blank')
+}
+const formVisible = ref(false)
+const formMode = ref('create')
+const sourceType = ref('manual')
+const saving = ref(false)
+const editingDocId = ref(null)
+const form = reactive({ title: '', content: '', publish_date: '', category: '', topics: [], url: '', department: '' })
+
+function openCreate() {
+  formMode.value = 'create'
+  sourceType.value = 'manual'
+  editingDocId.value = null
+  Object.assign(form, { title: '', content: '', publish_date: '', category: '', topics: [], url: '', department: '' })
+  formVisible.value = true
+}
+async function openEditFromDetail() {
+  formMode.value = 'edit'
+  editingDocId.value = detail.value.doc_id
+  Object.assign(form, {
+    title: detail.value.title || '', content: detail.value.content || '',
+    publish_date: detail.value.publish_date || '', category: detail.value.category || '',
+    topics: detail.value.topics || [], url: detail.value.url || '', department: detail.value.department || '',
+  })
+  formVisible.value = true
+}
+async function onFileChange(file) {
+  try {
+    const res = await adminApi.parseFile(file.raw)
+    form.title = res.title
+    form.content = res.content
+  } catch (e) { ElMessage.error(e.message) }
+}
+async function onSubmit() {
+  if (!form.title.trim() || !form.content.trim()) { ElMessage.warning('标题与正文必填'); return }
+  saving.value = true
+  try {
+    const payload = { title: form.title.trim(), content: form.content,
+      publish_date: form.publish_date || undefined, category: form.category || undefined,
+      topics: form.topics.length ? form.topics : undefined, url: form.url || undefined,
+      department: form.department || undefined }
+    if (formMode.value === 'create') await create(payload)
+    else await update(editingDocId.value, payload)
+    ElMessage.success('已保存')
+    formVisible.value = false
+    await loadPage()
+  } catch (e) { ElMessage.error(e.message) } finally { saving.value = false }
+}
+async function onRemoveFromDetail() {
+  try {
+    await remove(detail.value.doc_id)
+    ElMessage.success('已删除')
+    detailVisible.value = false
+    await loadPage()
+  } catch (e) { ElMessage.error(e.message) }
 }
 onMounted(loadPage)
 </script>

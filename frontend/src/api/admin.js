@@ -23,4 +23,13 @@ export const adminApi = {
   // 统计与治理
   stats: () => request('/admin-api/api/admin/stats'),
   expiryCheck: () => request('/admin-api/api/admin/expiry-check', { method: 'POST' }),
+  // 人工数据入库
+  parseFile: (file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return request('/admin-api/api/admin/manual/parse-file', { method: 'POST', body: fd, isForm: true })
+  },
+  createDocument: (payload) => request('/admin-api/api/admin/manual/documents', { method: 'POST', body: payload }),
+  updateDocument: (docId, payload) => request(`/admin-api/api/admin/manual/documents/${docId}`, { method: 'PUT', body: payload }),
+  removeDocument: (docId) => request(`/admin-api/api/admin/manual/documents/${docId}`, { method: 'DELETE' }),
 }

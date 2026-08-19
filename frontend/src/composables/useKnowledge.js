@@ -35,5 +35,17 @@ export function useKnowledge() {
     return adminApi.getKnowledgeDetail(docId)
   }
 
-  return { items, total, loading, error, load, setStatus, expiryCheck, getDetail }
+  async function create(payload) {
+    return adminApi.createDocument(payload)
+  }
+
+  async function update(docId, payload) {
+    return adminApi.updateDocument(docId, payload)
+  }
+
+  async function remove(docId) {
+    return adminApi.removeDocument(docId)
+  }
+
+  return { items, total, loading, error, load, setStatus, expiryCheck, getDetail, create, update, remove }
 }
