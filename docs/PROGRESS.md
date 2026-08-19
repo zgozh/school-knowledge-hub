@@ -66,6 +66,12 @@
 
 **关键环境事实**：DEEPSEEK_API_KEY 在 Windows 用户级环境变量中，DSH 沙箱进程不继承——DSH 起服务需先 `$env:DEEPSEEK_API_KEY=[Environment]::GetEnvironmentVariable('DEEPSEEK_API_KEY','User')`；用户自己开终端跑不受影响。transformers 需 4.52.x（uv 托管已装，5.x 会破坏 FlagEmbedding）。
 
+## 后续修复与运行移交（2026-08-19 下午）
+
+- `6056096`：**SSE CRLF 修复**——后端 sse_starlette 发 `\r\n` 换行，前端 sseFetch 只按 `\n\n` 分块导致浏览器端事件积压静默失败（curl 直测正常掩盖了此 bug）。sseFetch 读流时统一 `replace(/\r\n?/g,'\n')` 再分块，补 CRLF 单测（前端 8 passed）。
+- 运行移交：三后端服务已由用户自行启动验证（DSH 侧已停、端口释放）。知识库保留 8 篇 gzhu 真实文档 + 已启用采集源 f1bfb927f134（每 6h 自动增量采集）。
+- **新会话接手一句话**：读本文件 + `AGENTS.md` + Plan 文件，然后从「Plan 3」开始。
+
 ## 环境状态（本机开发）
 
 | 项 | 状态 |
