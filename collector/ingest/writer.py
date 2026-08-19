@@ -15,8 +15,10 @@ def doc_id_of(url: str) -> str:
 
 
 def ensure_collection(milvus) -> None:
-    """创建双向量集合（dense COSINE + sparse IP）与索引；已存在则跳过。"""
-    if milvus.has_collection(settings.milvus_collection):
+    """创建双向量集合（dense COSINE + sparse IP）与索引并加载；已存在则确保加载。"""
+    name = settings.milvus_collection
+    if milvus.has_collection(name):
+        milvus.load_collection(name)  # 幂等：确保已加载
         return
     from pymilvus import CollectionSchema, DataType, FieldSchema
 
@@ -35,15 +37,17 @@ def ensure_collection(milvus) -> None:
         FieldSchema(name="ingested_ts", dtype=DataType.INT64),
     ]
     milvus.create_collection(
-        collection_name=settings.milvus_collection,
+        collection_name=name,
         schema=CollectionSchema(fields, description="校务知识分块向量"),
     )
-    milvus.create_index(settings.milvus_collection, "dense_vector",
-                        {"index_type": "IVF_FLAT", "metric_type": "COSINE", "params": {"nlist": 128}})
-    milvus.create_index(settings.milvus_collection, "sparse_vector",
-                        {"index_type": "SPARSE_INVERTED_INDEX", "metric_type": "IP"})
-    milvus.load_collection(settings.milvus_collection)
-    logger.info("已创建集合 %s", settings.milvus_collection)
+    index_params = milvus.prepare_index_params()
+    index_params.add_index(field_name="dense_vector", index_type="IVF_FLAT",
+                           metric_type="COSINE", params={"nlist": 128})
+    index_params.add_index(field_name="sparse_vector", index_type="SPARSE_INVERTED_INDEX",
+                           metric_type="IP")
+    milvus.create_index(name, index_params)
+    milvus.load_collection(name)
+    logger.info("已创建集合 %s", name)
 
 
 async def ingest_document(parsed: ParsedArticle, category: str, topics: list[str], expire_at: str | None,
