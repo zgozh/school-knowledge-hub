@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from qa_api.api import chat
+from qa_api.api import chat, conversations
 
 app = FastAPI(title="校务中台·问答服务")
 app.add_middleware(
@@ -12,6 +12,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(chat.router)
+app.include_router(conversations.router)
 
 
 @app.get("/api/health")
