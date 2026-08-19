@@ -36,10 +36,16 @@ async def embed(req: EmbedRequest):
 
 @app.post("/rerank")
 async def rerank(req: RerankRequest):
+    """手写交叉编码推理（tokenize→前向→sigmoid），绕开 FlagEmbedding 与 transformers 版本接口漂移。"""
+    import torch
+
     model = get_reranker()
     pairs = [[req.query, doc] for doc in req.documents]
-    scores = model.compute_score(pairs, normalize=True)
-    if isinstance(scores, float):
-        scores = [scores]
+    with torch.no_grad():
+        inputs = model.tokenizer(
+            [p[0] for p in pairs], [p[1] for p in pairs],
+            padding=True, truncation=True, max_length=512, return_tensors="pt")
+        logits = model.model(**inputs, return_dict=True).logits
+        scores = torch.sigmoid(logits.view(-1).float()).tolist()
     order = sorted(range(len(scores)), key=lambda i: -scores[i])
-    return {"scores": [float(s) for s in scores], "order": order}
+    return {"scores": scores, "order": order}
