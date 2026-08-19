@@ -184,14 +184,15 @@ uv run uvicorn qa_api.main:app     --port 8003
 - 每条答案附来源引用卡片（标题可点击、分类/日期、过期预警）
 - 专题域筛选、示例问题、自动滚底
 - 无来源时诚实回答（不编造）
+- 多轮会话：历史会话持久化（MongoDB）、左侧边栏查看/切换/删除、新会话（豆包式）
 
 ## 验收状态（2026-08-20 实测）
 
-- 后端：**73 passed**（pytest 全量，含 mock 站点真跑集成 + 真实 LLM 生成段 + 人工入库；注入 `DEEPSEEK_API_KEY` 后无 skip）
-- 前端：build ✅ + **13 passed**（vitest，含 SSE CRLF 解析器、问答端组件、知识库详情与人工入库表单组件测试）
+- 后端：**87 passed**（pytest 全量，含 mock 站点真跑集成 + 真实 LLM 生成段 + 人工入库 + 多轮会话；注入 `DEEPSEEK_API_KEY` 后无 skip）
+- 前端：build ✅ + **28 passed**（vitest，含 SSE CRLF 解析器、问答端组件、知识库详情、人工入库表单与会话侧边栏组件测试）
 - 演示问题清单：**20 题逐题实测，来源引用率 20/20 = 100%**
 - 空环境复现：一条 `docker compose up -d --build` 起全栈（nginx 双端代理 + SPA fallback 实测）
-- 端到端：gzhu 通知公告 8 篇 + gznews 头条关注 11 篇真实采集（含 4 篇单页失败隔离）；18 篇模拟数据幂等播种；人工入库（录入/编辑/上传/删除）真跑通过；问答 SSE 全链路（chunk→sources→done）
+- 端到端：gzhu 通知公告 8 篇 + gznews 头条关注 11 篇真实采集（含 4 篇单页失败隔离）；18 篇模拟数据幂等播种；人工入库（录入/编辑/上传/删除）真跑通过；问答 SSE 全链路（chunk→sources→done）；多轮会话（新建/切换/删除/刷新不丢）真跑通过
 
 ## 目录结构
 

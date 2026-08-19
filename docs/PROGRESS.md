@@ -124,6 +124,15 @@
 - 真跑验收（容器 rebuild 后）：录入 → source_site=manual/url 保留 → 详情 200；编辑复用 doc_id 正文更新（含「寒暑假」）；上传 txt 解析+入库+删除（deleted:true + 404）；问答「图书馆借阅规则」召回 manual 文档附来源（lib.gzhu.edu.cn/rules.htm）。
 - 派活记录：按 AGENTS.md 先派 workflow（glm-5.3 后端 4 任务），再次空转（4 agent 全 null、仅 Task1 半途写测试）；主会话接管逐任务 TDD 完成。**再次印证：workflow 派 glm-5.3 在本项目持续空转，后续功能建议主会话直接执行。**
 
+## 多轮会话（2026-08-20，历史持久化 + 侧边栏 ✅）
+
+- 背景：问答端加「多轮会话 + 历史会话持久化 + 侧边栏」（豆包式：新建/切换/删除，刷新不丢）。spec `docs/superpowers/specs/2026-08-20-multi-turn-conversations-design.md`、plan `docs/superpowers/plans/2026-08-20-multi-turn-conversations.md`。
+- 方案 A 后端权威：会话落 MongoDB `conversations` 单集合（内嵌 `messages`）；`conversation_id=uuid4().hex[:16]`；`title=query[:20]`（超长加 `…`）仅建会话时写一次；上下文沿用 `llm.py` 已有 `history[-6:]`（不改生成层）。
+- `/chat` 契约变更：`{query, topic, history}` → `{query, topic, conversation_id}`（后端读会话拼历史）；`done` 事件 data 新增 `conversation_id`；会话落库失败 try/except 降级（done 仍返回、id 为 null）。
+- 8 任务 TDD（每任务最小改动 commit）：`65a0b09` 会话业务函数（依赖注入 db）→ `0c62d86` 会话 API（列表/详情/删除 404）→ `af3c2b2` /chat 改契约+落库 → `2323bd9` 前端会话 API → `61df52b` useConversations composable → `4895a42` Sidebar（新会话/列表/删除 popconfirm）→ `72b27a1` ChatView 两栏集成（发消息带 conversationId，done 记新 id 刷新列表）→ 文档同步（本 commit）。
+- 后端 +14 用例（**87 passed**）；前端 +15 用例（**28 passed**）+ build ✅。
+- 派活记录：主会话直接执行（遵循本文件已沉淀教训——workflow 派 glm-5.3 持续空转，见「人工数据入库」段）。
+
 ## 环境状态（本机开发）
 
 | 项 | 状态 |
