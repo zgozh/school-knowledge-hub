@@ -13,8 +13,17 @@ logger = get_logger("collector.engine")
 
 
 class CrawlEngine:
+    # 站点 WAF 拦截默认 python-httpx UA，统一伪装浏览器（否则 403）
+    DEFAULT_HEADERS = {
+        "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                       "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    }
+
     def __init__(self, http_client: httpx.AsyncClient | None = None):
-        self._http = http_client or httpx.AsyncClient(timeout=settings.external_timeout)
+        self._http = http_client or httpx.AsyncClient(
+            timeout=settings.external_timeout, headers=self.DEFAULT_HEADERS)
         self._seen: set[str] = set()
 
     def has_seen(self, key: str) -> bool:
