@@ -28,7 +28,7 @@ async def embed(req: EmbedRequest):
     model = get_bge_m3()
     out = model.encode(req.texts, return_dense=True, return_sparse=True)
     embeddings = [
-        {"dense": list(d), "sparse": {int(k): float(v) for k, v in s.items()}}
+        {"dense": [float(x) for x in d], "sparse": {int(k): float(v) for k, v in s.items()}}
         for d, s in zip(out["dense_vecs"], out["lexical_weights"])
     ]
     return {"embeddings": embeddings}
