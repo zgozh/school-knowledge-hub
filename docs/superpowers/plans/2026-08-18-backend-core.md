@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **派活约定（ADR-011）**：本计划任务由主会话（`gpt-5.6-sol`）用 `workflow` 按阶段批量派发给 `model: 'gpt-5.6-sol'` 执行；任务简报必须自包含（本计划的 Task 章节即简报，含文件/接口/验收/测试代码）。主会话自己执行脚手架任务（A1~A3）。
+> **派活约定（ADR-011）**：本计划任务由主会话（deepseek-v4-pro）用 `workflow` 按阶段批量派发给 `model: 'glm-5.3'` 执行；任务简报必须自包含（本计划的 Task 章节即简报，含文件/接口/验收/测试代码）。主会话自己执行脚手架任务（A1~A3）。
 
 **Goal:** 实现校务 AI 中台的后端核心：本地模型服务、多源自动采集管道（含知识管理）、可信问答链路（混合检索+重排+流式生成）。
 
@@ -649,7 +649,7 @@ git commit -m "feat: docker-compose存储编排(milvus/mongo/minio/etcd)"
 
 ---
 
-## 阶段 B：采集管道（派发 `gpt-5.6-sol` 批量，Task B1~B4 一批）
+## 阶段 B：采集管道（派发 glm-5.3 批量，Task B1~B4 一批）
 
 ### Task B1: 站点适配器（基类 + 广州大学主站/新闻网）
 
@@ -2186,7 +2186,7 @@ git commit -m "feat: 采集服务API(采集源/任务/知识库/统计/到期检
 
 ---
 
-## 阶段 C：问答链路（派发 `gpt-5.6-sol` 批量，Task C1~C4 一批）
+## 阶段 C：问答链路（派发 glm-5.3 批量，Task C1~C4 一批）
 
 ### Task C1: 检索模块（混合检索 + 元数据过滤 + 时间衰减 + 过期降权）
 

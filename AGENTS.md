@@ -16,9 +16,9 @@
 
 | 环节 | 模型 | 执行方式 |
 |------|------|---------|
-| 调度 / 脚手架 / 规划 / 评审 / 集成 | `gpt-5.6-sol` | 主会话直接执行 |
-| 后端代码开发（collector/qa_api/model_server/shared） | `gpt-5.6-sol` | 主会话用 `workflow` 按阶段**批量派发**，`agent(prompt, {model: 'gpt-5.6-sol'})` |
-| 前端代码开发（frontend） | `gpt-5.6-sol` | 主会话用 `workflow` 按阶段**批量派发**，`agent(prompt, {model: 'gpt-5.6-sol'})` |
+| 调度 / 脚手架 / 规划 / 评审 / 集成 | deepseek-v4-pro | 主会话直接执行 |
+| 后端代码开发（collector/qa_api/model_server/shared） | glm-5.3 | 主会话用 `workflow` 按阶段**批量派发**，`agent(prompt, {model: 'glm-5.3'})` |
+| 前端代码开发（frontend） | kimi-k3 | 主会话用 `workflow` 批量派发，`agent(prompt, {model: 'kimi-k3'})` |
 
 **派活规则**：
 1. DSH 实测能力边界：`subagent` 工具无法指定模型；`workflow` 可指定模型但每次是新子代理。因此**任务简报必须完全自包含**（不依赖子代理之前的对话记忆）。
