@@ -30,3 +30,4 @@ package = false
 pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = ["integration: 需要 docker 存储与 model_server 在线的集成测试"]
