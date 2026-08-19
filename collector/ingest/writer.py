@@ -51,7 +51,7 @@ def ensure_collection(milvus) -> None:
 
 
 async def ingest_document(parsed: ParsedArticle, category: str, topics: list[str], expire_at: str | None,
-                          embed_fn=None, milvus=None, mongo_db=None, minio=None) -> str:
+                          embed_fn=None, milvus=None, mongo_db=None, minio=None, doc_id: str | None = None) -> str:
     """幂等入库：先按 doc_id 删除旧数据再插入新数据。返回 doc_id。（motor 异步，所有 Mongo 调用必须 await）"""
     from shared.clients import get_milvus, get_minio, get_mongo
 
@@ -61,7 +61,7 @@ async def ingest_document(parsed: ParsedArticle, category: str, topics: list[str
     embed_fn = embed_fn or _embed_batch
     ensure_collection(milvus)
 
-    doc_id = doc_id_of(parsed.url)
+    doc_id = doc_id or doc_id_of(parsed.url)
     chunks = split_text(parsed.content)
     embeddings = embed_fn(chunks)
 

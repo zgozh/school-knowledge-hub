@@ -112,3 +112,15 @@ async def test_ingest_minio_down_degrades():
     assert len(doc_id) == 16  # doc_id_of = md5(url)[:16]（十六进制 16 位）
     assert len(mongo.docs) == 1
     assert mongo.docs[0]["snapshot_missing"] is True
+
+
+@pytest.mark.asyncio
+async def test_ingest_explicit_doc_id():
+    """显式传入 doc_id 时，返回并落库该 doc_id（而非按 url 计算）。"""
+    milvus, mongo = FakeMilvus(), FakeMongo()
+    doc_id = await ingest_document(make_article(), "通知公告", [], "2026-10-30",
+                                   embed_fn=lambda texts: [{"dense": [0.1] * 4, "sparse": {1: 0.5}} for _ in texts],
+                                   milvus=milvus, mongo_db=mongo, minio=FakeMinio(),
+                                   doc_id="manual-0001")
+    assert doc_id == "manual-0001"
+    assert mongo.docs[0]["doc_id"] == "manual-0001"
