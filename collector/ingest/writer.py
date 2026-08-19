@@ -15,20 +15,35 @@ def doc_id_of(url: str) -> str:
 
 
 def ensure_collection(milvus) -> None:
-    """创建集合与索引：dense COSINE、sparse IP。"""
+    """创建双向量集合（dense COSINE + sparse IP）与索引；已存在则跳过。"""
     if milvus.has_collection(settings.milvus_collection):
         return
+    from pymilvus import CollectionSchema, DataType, FieldSchema
+
+    fields = [
+        FieldSchema(name="id", dtype=DataType.VARCHAR, is_primary=True, max_length=64),
+        FieldSchema(name="doc_id", dtype=DataType.VARCHAR, max_length=32),
+        FieldSchema(name="chunk_idx", dtype=DataType.INT64),
+        FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=4096),
+        FieldSchema(name="dense_vector", dtype=DataType.FLOAT_VECTOR, dim=1024),
+        FieldSchema(name="sparse_vector", dtype=DataType.SPARSE_FLOAT_VECTOR),
+        FieldSchema(name="category", dtype=DataType.VARCHAR, max_length=64),
+        FieldSchema(name="topics", dtype=DataType.ARRAY, element_type=DataType.VARCHAR, max_capacity=16, max_length=32),
+        FieldSchema(name="publish_date", dtype=DataType.VARCHAR, max_length=32),
+        FieldSchema(name="expire_at", dtype=DataType.VARCHAR, max_length=32),
+        FieldSchema(name="status", dtype=DataType.VARCHAR, max_length=16),
+        FieldSchema(name="ingested_ts", dtype=DataType.INT64),
+    ]
     milvus.create_collection(
         collection_name=settings.milvus_collection,
-        dimension=1024,
-        metric_type="COSINE",
-        primary_field_name="id",
-        vector_field_name="dense_vector",
+        schema=CollectionSchema(fields, description="校务知识分块向量"),
     )
-    milvus.add_index(settings.milvus_collection, "dense_vector",
-                     {"index_type": "IVF_FLAT", "metric_type": "COSINE", "params": {"nlist": 128}})
-    milvus.add_index(settings.milvus_collection, "sparse_vector",
-                     {"index_type": "SPARSE_INVERTED_INDEX", "metric_type": "IP"})
+    milvus.create_index(settings.milvus_collection, "dense_vector",
+                        {"index_type": "IVF_FLAT", "metric_type": "COSINE", "params": {"nlist": 128}})
+    milvus.create_index(settings.milvus_collection, "sparse_vector",
+                        {"index_type": "SPARSE_INVERTED_INDEX", "metric_type": "IP"})
+    milvus.load_collection(settings.milvus_collection)
+    logger.info("已创建集合 %s", settings.milvus_collection)
 
 
 async def ingest_document(parsed: ParsedArticle, category: str, topics: list[str], expire_at: str | None,
@@ -40,6 +55,7 @@ async def ingest_document(parsed: ParsedArticle, category: str, topics: list[str
     mongo_db = mongo_db or get_mongo()
     minio = minio or get_minio()
     embed_fn = embed_fn or _embed_batch
+    ensure_collection(milvus)
 
     doc_id = doc_id_of(parsed.url)
     chunks = split_text(parsed.content)
