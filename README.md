@@ -53,8 +53,9 @@ uv run python -m scripts.seed_demo
 **管理端（/admin）**
 - 采集源管理：增删采集源、立即采集、启停
 - 采集任务：状态监控、失败详情、30s 自动刷新
-- 知识库管理：分类/状态/专题筛选、分页、上下架、到期检测
+- 知识库管理：分类/状态/专题筛选、分页、上下架、到期检测、点标题查看详情（元数据+正文）
 - 资产全景：指标卡、分类/状态/专题图表、近期任务、热门问题
+- 人工数据入库（规划中）：手动录入 + 上传文件（PDF/Word/文本），编辑/删除治理，见 spec
 
 **问答端（/）**
 - 自然语言提问，SSE 流式回答，Markdown 渲染
@@ -64,8 +65,8 @@ uv run python -m scripts.seed_demo
 
 ## 验收状态（2026-08-19 实测）
 
-- 后端：**53 passed**（pytest 全量，含 mock 站点真跑集成 + 真实 LLM 生成段；注入 `DEEPSEEK_API_KEY` 后无 skip）
-- 前端：build ✅ + **9 passed**（vitest，含 SSE CRLF 解析器与问答端组件测试）
+- 后端：**55 passed**（pytest 全量，含 mock 站点真跑集成 + 真实 LLM 生成段；注入 `DEEPSEEK_API_KEY` 后无 skip）
+- 前端：build ✅ + **11 passed**（vitest，含 SSE CRLF 解析器、问答端组件与知识库详情组件测试）
 - 演示问题清单：**20 题逐题实测，来源引用率 20/20 = 100%**
 - 空环境复现：一条 `docker compose up -d --build` 起全栈（nginx 双端代理 + SPA fallback 实测）
 - 端到端：gzhu 通知公告 8 篇 + gznews 头条关注 11 篇真实采集（含 4 篇单页失败隔离）；18 篇模拟数据幂等播种；问答 SSE 全链路（chunk→sources→done）
@@ -87,6 +88,7 @@ tests/        后端 pytest 测试
 | 文档 | 说明 |
 |------|------|
 | `docs/superpowers/specs/2026-08-18-school-knowledge-hub-design.md` | 需求与设计唯一真相 |
+| `docs/superpowers/specs/2026-08-20-manual-data-ingestion-design.md` | 人工数据入库设计（录入/上传/编辑/删除，规划中） |
 | `docs/adr/ADR-001..011` | 技术决策记录（含模型分工与派活约定） |
 | `docs/superpowers/plans/` | 后端核心（Plan 1）与前端（Plan 2）实现计划 |
 | `docs/PROGRESS.md` | 跨会话进度交接（必读） |
