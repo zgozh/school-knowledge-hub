@@ -57,5 +57,8 @@ async def demo_doc_count() -> int:
 
 
 if __name__ == "__main__":
-    seeded = asyncio.run(seed_all())
-    print(f"播种完成：{seeded} 篇；库内演示文档总数：{asyncio.run(demo_doc_count())}")
+    async def _main():
+        seeded = await seed_all()
+        print(f"播种完成：{seeded} 篇；库内演示文档总数：{await demo_doc_count()}")
+
+    asyncio.run(_main())
