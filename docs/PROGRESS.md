@@ -1,6 +1,6 @@
 # 项目进度交接（PROGRESS.md）
 
-> 跨会话续接的权威状态文件：任何会话接手本项目，先读本文件 + `AGENTS.md` + `docs/superpowers/plans/2026-08-18-backend-core.md`，即可无缝继续。
+> 跨会话续接的权威状态文件：任何会话接手本项目，先读本文件 + `AGENTS.md` + 对应 Plan 文件（`docs/superpowers/plans/2026-08-18-backend-core.md` / `2026-08-19-plan3-demo-data-integration-delivery.md`），即可无缝继续。
 
 ## 一句话
 
@@ -14,6 +14,7 @@
 | ADR（决策真相） | `docs/adr/ADR-001..011` | 技术选型与派活约定 |
 | 开发公约 | `AGENTS.md` | 模型分工/TDD/纪律（强制） |
 | Plan 1（后端实现计划） | `docs/superpowers/plans/2026-08-18-backend-core.md` | 阶段 A/B/C 共 17 个 TDD 任务，含完整代码与测试 |
+| Plan 3（交付实现计划） | `docs/superpowers/plans/2026-08-19-plan3-demo-data-integration-delivery.md` | D1~D3 模拟数据与质量 / E1~E2 集成与降级 / F1~F3 打包交付，8 任务 TDD |
 
 ## 当前进度
 
@@ -48,9 +49,9 @@
 
 ### 待执行 ⏳
 
-1. **Plan 3**：模拟数据脚本（六大专题域）+ 集成测试 + 打包交付——**尚未编写**。
-2. **打标质量优化**：8 篇真实采集分类全部 fallback 为"通知公告"、专题为空（规则词表覆盖不足 + 当时 LLM 缺 key），需补规则词表并复采验证。
-3. **评审遗留**：B7 scheduler 注册 / B8 tasks API 无自动化测试（仅冒烟），并入 Plan 3 集成测试覆盖。
+1. **Plan 3**：已编写（8 任务 TDD，含全部测试/实现代码与验收步骤）——**待用户确认后按 ADR-011 派活执行**（D/E 批量派 glm-5.3，F 主会话）。
+2. ~~打标质量优化~~：已并入 Plan 3 D2（规则词表扩充 + 专题域规则兜底 + 复采验证）。
+3. ~~评审遗留 B7/B8 测试~~：已并入 Plan 3 D1（调度器注册 + tasks API + collector /health）。
 
 ## 端到端联调记录（2026-08-19 实测跑通 ✅）
 
