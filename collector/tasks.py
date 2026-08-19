@@ -7,7 +7,7 @@ from collector.lifecycle.validity import infer_expiry
 from collector.parser.extract import extract_article
 from collector.sources import SourceConfig
 from collector.tagger.llm_topics import batch_tag_topics
-from collector.tagger.rules import classify_category
+from collector.tagger.rules import classify_category, rule_tag_topics
 from shared.clients import get_mongo
 from shared.errors import ExternalServiceError
 from shared.logging import get_logger
@@ -65,8 +65,9 @@ async def run_collection_task(source: SourceConfig) -> dict:
     for art in parsed:
         try:
             category = classify_category(art.title, art.column)
+            topics = topics_map.get(art.url) or rule_tag_topics(art.title, art.content)
             expire_at = infer_expiry(art.title, art.content, category, art.publish_date or "")
-            await ingest_document(art, category, topics_map.get(art.url, []), expire_at)
+            await ingest_document(art, category, topics, expire_at)
             succeeded += 1
         except Exception as e:
             failures.append({"url": art.url, "error": str(e), "stage": "ingest"})
