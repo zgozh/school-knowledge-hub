@@ -21,3 +21,8 @@ app = FastAPI(title="校务中台·采集服务", lifespan=lifespan)
 app.include_router(sources_api.router)
 app.include_router(tasks_api.router)
 app.include_router(knowledge_api.router)
+
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
