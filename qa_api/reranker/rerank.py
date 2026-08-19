@@ -12,7 +12,8 @@ def rerank_chunks(query: str, chunks: list[ScoredChunk], client=None) -> list[Sc
     if not chunks:
         return chunks
     try:
-        client = client or httpx.Client(timeout=settings.external_timeout)
+        # 冷启动首次推理较慢，用 LLM 级超时（30s）而非通用外部超时（10s）
+        client = client or httpx.Client(timeout=settings.llm_timeout)
         resp = client.post(f"{settings.rerank_service_url}/rerank",
                            json={"query": query, "documents": [c.text for c in chunks]})
         resp.raise_for_status()

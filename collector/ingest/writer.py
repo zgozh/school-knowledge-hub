@@ -41,8 +41,8 @@ def ensure_collection(milvus) -> None:
         schema=CollectionSchema(fields, description="校务知识分块向量"),
     )
     index_params = milvus.prepare_index_params()
-    index_params.add_index(field_name="dense_vector", index_type="IVF_FLAT",
-                           metric_type="COSINE", params={"nlist": 128})
+    # AUTOINDEX：小数据量自动暴力检索，避免 IVF nlist 过大导致 nprobe 探不到桶（空召回）
+    index_params.add_index(field_name="dense_vector", index_type="AUTOINDEX", metric_type="COSINE")
     index_params.add_index(field_name="sparse_vector", index_type="SPARSE_INVERTED_INDEX",
                            metric_type="IP")
     milvus.create_index(name, index_params)
