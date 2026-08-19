@@ -21,7 +21,10 @@ async def list_conversations(db) -> list[dict]:
 
 
 async def get_conversation(db, conversation_id: str) -> dict | None:
-    return await db["conversations"].find_one({"conversation_id": conversation_id})
+    conv = await db["conversations"].find_one({"conversation_id": conversation_id})
+    if conv and "_id" in conv:
+        conv["_id"] = str(conv["_id"])  # ObjectId 转 str，避免 FastAPI JSON 序列化 500
+    return conv
 
 
 async def delete_conversation(db, conversation_id: str) -> bool:

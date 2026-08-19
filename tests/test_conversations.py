@@ -1,5 +1,7 @@
 # tests/test_conversations.py
 """会话业务函数测试（纯 mock Mongo，依赖注入 db）。"""
+from bson import ObjectId
+
 from qa_api.conversations import (
     append_or_create, delete_conversation, get_conversation, list_conversations,
 )
@@ -101,3 +103,10 @@ async def test_append_or_create_unknown_id_creates_new():
     db = FakeDb()
     cid = await append_or_create(db, "ghost", "问", "答", [])
     assert len(cid) == 16 and db.coll.inserted
+
+
+async def test_get_conversation_objectid_serializable():
+    oid = ObjectId()
+    coll = FakeConvColl({"c1": {"_id": oid, "conversation_id": "c1", "messages": []}})
+    conv = await get_conversation(FakeDb(coll), "c1")
+    assert conv["_id"] == str(oid)  # ObjectId 转 str，可 JSON 序列化（真跑详情端点 500 的根因）
