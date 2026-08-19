@@ -15,6 +15,9 @@
 | 开发公约 | `AGENTS.md` | 模型分工/TDD/纪律（强制） |
 | Plan 1（后端实现计划） | `docs/superpowers/plans/2026-08-18-backend-core.md` | 阶段 A/B/C 共 17 个 TDD 任务，含完整代码与测试 |
 | Plan 3（交付实现计划） | `docs/superpowers/plans/2026-08-19-plan3-demo-data-integration-delivery.md` | D1~D3 模拟数据与质量 / E1~E2 集成与降级 / F1~F3 打包交付，8 任务 TDD |
+| 作品说明书 | `docs/作品说明书.md` | 定位/创新点/架构/验收（交付物） |
+| 演示视频脚本 | `docs/演示视频脚本.md` | 8 镜 5 分钟路演脚本（交付物） |
+| 20 题演示清单 | `docs/demo/20-questions.md` | 路演问答素材 + 来源引用率验收 |
 
 ## 当前进度
 
@@ -42,16 +45,26 @@
 | C3 生成 | 提示词 + LLM 主备降级流式 | c7b3884 |
 | C4 问答 API | /chat SSE + 来源引用 + 问答日志 | 33bbb53 |
 | C 收尾 | compose 追加 collector/qa-api 服务 | 292e0b6 |
+| D1 测试补齐 | collector /health + 调度器/tasks API 测试（6 用例） | bb72770 |
+| D2 打标兜底 | 规则词表扩充 + 专题域规则兜底 | cd9acbc |
+| D3 模拟数据 | 六大专题域 18 篇模拟播种脚本 | 599a6cd |
+| D 批修复 | MinIO 流对象 / seed 单事件循环（真跑暴露） | 0f1b426 / cd473d4 |
+| E1 集成测试 | mock 站点 5 篇真跑全链路 + motor 隔离修复 | b2c5465 / 530f71c |
+| E2 降级测试 | reranker 兜底 / LLM 主备切换 3 用例 | e9f5777 |
+| F1 容器化 | 前端 Dockerfile+nginx 双端代理 + compose 全栈 + README | 633486a |
+| F2 演示清单 | 20 题清单（六大专题域+综合） | a96cf02 |
+| F3 交付文档 | 作品说明书 + 演示视频脚本 + PROGRESS 收尾 | 见最新 commit |
 
-**测试状态：35 passed**。**后端 Plan 1 全部完成**（阶段 A/B/C 共 17 任务 + 2 处评审修复）；**前端 Plan 2 全部完成**（F1~F7，每任务独立 commit）。
+**测试状态：后端 53 passed（含真实 LLM 集成段）；前端 build 0 + vitest 9 passed；20 题来源引用率 20/20 = 100%**。**全部阶段完成**（Plan 1 阶段 A/B/C 17 任务、前端 Plan 2 F1~F7、Plan 3 D/E/F 8 任务）；全栈 compose 一条命令起实测通过。
 
 冒烟验证记录：model_server `/health` ✅；collector 采集源 CRUD 全链路 ✅；qa_api `/health` ✅、`/chat` SSE 返回 `event: empty`（模型服务不在时降级诚实回答）✅；前端 5 路由全 200、build+vitest 通过 ✅。
 
 ### 待执行 ⏳
 
-1. **Plan 3**：已编写（8 任务 TDD，含全部测试/实现代码与验收步骤）——**待用户确认后按 ADR-011 派活执行**（D/E 批量派 glm-5.3，F 主会话）。
-2. ~~打标质量优化~~：已并入 Plan 3 D2（规则词表扩充 + 专题域规则兜底 + 复采验证）。
-3. ~~评审遗留 B7/B8 测试~~：已并入 Plan 3 D1（调度器注册 + tasks API + collector /health）。
+1. **Plan 3**：✅ 已完成（D/E 批派 glm-5.3 + 主会话核验接管；F 批主会话直接执行）。
+2. ~~打标质量优化~~：已并入 Plan 3 D2（规则词表扩充 + 专题域规则兜底 + 复采验证）✅。
+3. ~~评审遗留 B7/B8 测试~~：已并入 Plan 3 D1（调度器注册 + tasks API + collector /health）✅。
+4. **后续可选（不在计划内）**：演示视频实际录制（脚本已备）；知识库人工修正/上下架的评审交互打磨；gznews 采集 4 篇失败页面的人工核查。
 
 ## 端到端联调记录（2026-08-19 实测跑通 ✅）
 
@@ -90,6 +103,17 @@
 - **环境新事实**：DSH 沙箱 workspace-write 模式**拒绝修改/删除非本会话创建的既有文件**（node_modules 由用户早上安装，pnpm add 重链时反复「Failed to remove」挂死）；会话文件策略升 danger-full-access 后安装 3.5s 完成。凡需动既有 node_modules/构建产物的命令，需该策略。子代理（kimi-k3）本轮再次空转零产出（仅留 .pnpm-store 垃圾），主会话已接管完成。
 - 运行移交：三后端服务已由用户自行启动验证（DSH 侧已停、端口释放）。知识库保留 8 篇 gzhu 真实文档 + 已启用采集源 f1bfb927f134（每 6h 自动增量采集）。
 - **新会话接手一句话**：读本文件 + `AGENTS.md` + Plan 文件，然后从「Plan 3」开始。
+
+## Plan 3 阶段 F 完成（2026-08-20 凌晨，项目收官 ✅）
+
+- `633486a`（F1）：前端容器化（Dockerfile 双段构建 + nginx 双端反代/SSE 不缓冲/SPA fallback）+ compose 追加 frontend + README 一条命令起全栈。
+- `a96cf02`（F2）：20 题演示问题清单（六大专题域 18 题 + 综合 2 题）。
+- F3（最新 commit）：`docs/作品说明书.md` + `docs/演示视频脚本.md` + PROGRESS/README 终态同步。
+- **F1 真跑修复清单**（Docker Desktop + 国内网络踩坑）：① BuildKit token 拉取走 IPv6 超时 → 先用 `docker pull` 预拉基础镜像再 build；② pnpm@11 需 Node ≥22.13（node:sqlite）→ 基础镜像 node:22-alpine；③ 容器内 npm/pip 直连官方源不可达 → 显式加 npmmirror/清华镜像；④ 后端 Dockerfile 按仓库根上下文 COPY（compose 原 build 指向子目录从未构建过）→ 三服务 build 块改 context:.+dockerfile；⑤ collector Dockerfile 漏 simhash → 补包；⑥ 根 .dockerignore 防 node_modules 进上下文。
+- **F2 空环境复测实测**：compose 起全栈 → 前端 `/` 与 `/admin` SPA 断言 ✅ → `/admin-api/api/health` 与 `/qa-api/api/health` 经 nginx 200 ✅ → 容器内播种 18 篇模拟 + gzhu 8 篇 + gznews 11 篇真实采集（4 篇失败隔离）→ **20 题逐题 SSE 实测 20/20 附来源引用（100%）** → 后端 53 passed（含真实 LLM）→ 前端 build 0 + 9 tests。
+- **重大环境发现（双存储，务必知晓）**：本机 127.0.0.1:9000/19530/27017 由 `wslrelay.exe`（WSL2）独占中继 → 宿主机进程（uv run）连 localhost 打的是 **WSL 里的真实存储**（知识库数据在那边）；Docker Desktop compose 起的是**另一套独立存储**（容器网络内部互通，全新）。两套各自自洽：宿主机三服务+真实库 / compose 全栈+容器库。宿主机要打容器库需绕 127.0.0.1（用局域网 IP 或进容器 exec）。**演示（compose 一条命令）默认用容器库，从空库起：播种+建源+采集即可复现 20/20。**
+- 派活记录：F 批按计划主会话直接执行（未派 workflow）。
+- **项目收官结论**：Plan 1/2/3 全部完成，8 任务 TDD 逐项核验磁盘/测试/commit 通过；剩余可选事项见「待执行」第 4 条。
 
 ## 环境状态（本机开发）
 

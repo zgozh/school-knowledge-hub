@@ -64,10 +64,11 @@ uv run python -m scripts.seed_demo
 
 ## 验收状态（2026-08-19 实测）
 
-- 后端：**35 passed**（pytest，TDD 全链路）
-- 前端：build ✅ + 7 tests passed（sseFetch 解析器）
-- 端到端冒烟：三服务启动、管理 API + 采集源 CRUD、问答 SSE、前端 5 路由与代理转发全通过
-- 待完成：模拟数据脚本与集成测试（Plan 3）、真实采集→问答全链路联调
+- 后端：**53 passed**（pytest 全量，含 mock 站点真跑集成 + 真实 LLM 生成段；注入 `DEEPSEEK_API_KEY` 后无 skip）
+- 前端：build ✅ + **9 passed**（vitest，含 SSE CRLF 解析器与问答端组件测试）
+- 演示问题清单：**20 题逐题实测，来源引用率 20/20 = 100%**
+- 空环境复现：一条 `docker compose up -d --build` 起全栈（nginx 双端代理 + SPA fallback 实测）
+- 端到端：gzhu 通知公告 8 篇 + gznews 头条关注 11 篇真实采集（含 4 篇单页失败隔离）；18 篇模拟数据幂等播种；问答 SSE 全链路（chunk→sources→done）
 
 ## 目录结构
 
@@ -89,4 +90,7 @@ tests/        后端 pytest 测试
 | `docs/adr/ADR-001..011` | 技术决策记录（含模型分工与派活约定） |
 | `docs/superpowers/plans/` | 后端核心（Plan 1）与前端（Plan 2）实现计划 |
 | `docs/PROGRESS.md` | 跨会话进度交接（必读） |
+| `docs/作品说明书.md` | 作品交付说明书（定位/创新点/架构/验收） |
+| `docs/演示视频脚本.md` | 8 镜 5 分钟路演脚本 |
+| `docs/demo/20-questions.md` | 演示问题清单（20 题） |
 | `AGENTS.md` | 开发公约（AI 代理强制约束） |
