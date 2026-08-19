@@ -33,24 +33,20 @@
 - **model_server**（本地推理）：embedding + rerank 统一封装，权重不可用时降级不拖垮主链路
 - **前端**：Vue 3 + Element Plus + echarts + markstream-vue，SSE 流式（fetch+ReadableStream 解析）
 
-## 快速开始
+## 快速开始（一条命令起全栈）
 
 ```powershell
-# 1. 依赖服务（docker compose：Milvus/MongoDB/MinIO/etcd）
-docker compose up -d
+# 1. 复制 .env.example 为 .env，填入 BGE_M3_PATH / RERANKER_PATH / DEEPSEEK_API_KEY
+# 2. 一条命令起全栈（存储 + 三后端 + 前端）
+docker compose up -d --build
 
-# 2. 模型配置：复制 .env.example 为 .env，填入 BGE_M3_PATH / RERANKER_PATH
+# 3. 播种演示数据（可选；幂等可重跑）
+uv run python -m scripts.seed_demo
 
-# 3. 后端三服务（三个终端）
-uv run uvicorn model_server.main:app --port 8001
-uv run uvicorn collector.main:app --port 8002
-uv run uvicorn qa_api.main:app --port 8003
-
-# 4. 前端
-cd frontend
-pnpm install
-pnpm dev    # 打开 http://localhost:5173（问答端）；管理端 http://localhost:5173/admin
+# 4. 打开 http://localhost:5173（问答端）；管理端 http://localhost:5173/admin
 ```
+
+本地开发（不用容器）仍支持：三个终端分别 `uv run uvicorn model_server.main:app --port 8001` / `collector.main:app --port 8002` / `qa_api.main:app --port 8003`，前端 `cd frontend && pnpm dev`。
 
 ## 功能清单
 

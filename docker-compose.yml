@@ -35,7 +35,9 @@ services:
     volumes:
       - mongo_data:/data/db
   model-server:
-    build: ./model_server
+    build:
+      context: .
+      dockerfile: model_server/Dockerfile
     ports: ["8001:8001"]
     environment:
       BGE_M3_PATH: /models/bge-m3
@@ -44,7 +46,9 @@ services:
       - ${BGE_M3_LOCAL:-D:/ai_models/huggingface_cache/bge-m3/models/BAAI--bge-m3/snapshots/master}:/models/bge-m3
       - ${RERANKER_LOCAL:-D:/ai_models/modelscope_cache/models/BAAI--bge-reranker-large/snapshots/master}:/models/bge-reranker-large
   collector:
-    build: ./collector
+    build:
+      context: .
+      dockerfile: collector/Dockerfile
     ports: ["8002:8002"]
     environment:
       MILVUS_URI: http://milvus:19530
@@ -57,7 +61,9 @@ services:
       - .env
     depends_on: [milvus, mongo, minio, model-server]
   qa-api:
-    build: ./qa_api
+    build:
+      context: .
+      dockerfile: qa_api/Dockerfile
     ports: ["8003:8003"]
     environment:
       MILVUS_URI: http://milvus:19530
@@ -69,6 +75,10 @@ services:
     env_file:
       - .env
     depends_on: [milvus, mongo, model-server]
+  frontend:
+    build: ./frontend
+    ports: ["5173:80"]
+    depends_on: [collector, qa-api]
 volumes:
   etcd_data:
   minio_data:
