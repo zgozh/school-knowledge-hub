@@ -38,6 +38,8 @@ def test_gzhu_parse_list():
     assert len(refs) == 2
     assert refs[0].title == "关于给予曾玮等14名学生退学处理的预公告"
     assert refs[0].publish_date == "2026-04-30"
+    # 列表页在 /z__l/ 下，文章在站点根 /info/ 下：URL 必须拼到根而非列表页目录
+    assert refs[0].url == "https://www.gzhu.edu.cn/info/1087/33327.htm"
 
 
 def test_gzhu_parse_detail():
