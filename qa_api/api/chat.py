@@ -1,4 +1,4 @@
-"""问答 SSE API：检索→重排→流式生成→来源引用→日志。"""
+"""问答 SSE API：检索→重排→流式生成→来源引用→会话落库→日志。"""
 import json
 import time
 import uuid
@@ -7,6 +7,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+from qa_api.conversations import append_or_create, get_conversation
 from qa_api.generator.llm import stream_answer
 from qa_api.generator.prompts import build_context
 from qa_api.reranker.rerank import rerank_chunks
@@ -24,7 +25,7 @@ EMPTY_MESSAGE = "知识库中暂未找到相关内容。建议：①换个关键
 class ChatRequest(BaseModel):
     query: str
     topic: str | None = None
-    history: list[dict] | None = None
+    conversation_id: str | None = None
 
 
 @router.post("/chat")
@@ -42,8 +43,15 @@ async def chat(req: ChatRequest):
             chunks = cliff_cutoff(chunks)
             answer_parts: list[str] = []
 
+            history = None
+            if req.conversation_id:
+                conv = await get_conversation(get_mongo(), req.conversation_id)
+                if conv:
+                    history = [{"role": m["role"], "content": m["content"]}
+                               for m in conv.get("messages", [])]
+
             async def generate():
-                async for delta in stream_answer(req.query, build_context(chunks), req.history):
+                async for delta in stream_answer(req.query, build_context(chunks), history):
                     answer_parts.append(delta)
                     yield {"event": "chunk", "data": json.dumps({"delta": delta}, ensure_ascii=False)}
 
@@ -62,8 +70,15 @@ async def chat(req: ChatRequest):
                     "expired": c.expired,
                 })
             yield {"event": "sources", "data": json.dumps({"sources": sources}, ensure_ascii=False)}
-            elapsed_ms = int((time.monotonic() - started) * 1000)
             answer = "".join(answer_parts)
+
+            conv_id = None
+            try:
+                conv_id = await append_or_create(get_mongo(), req.conversation_id, req.query, answer, sources)
+            except Exception as e:
+                logger.warning("会话落库失败(降级): %s", e)
+
+            elapsed_ms = int((time.monotonic() - started) * 1000)
             try:
                 await get_mongo()["qa_logs"].insert_one({
                     "query_id": query_id, "query": req.query, "answer": answer,
@@ -74,7 +89,8 @@ async def chat(req: ChatRequest):
                 logger.warning("问答日志写入失败(降级): %s", e)
             yield {"event": "done",
                    "data": json.dumps({"query_id": query_id, "elapsed_ms": elapsed_ms,
-                                       "answer_len": len(answer)}, ensure_ascii=False)}
+                                       "answer_len": len(answer), "conversation_id": conv_id},
+                                      ensure_ascii=False)}
         except ExternalServiceError as e:
             yield {"event": "error", "data": json.dumps({"message": str(e)}, ensure_ascii=False)}
 
