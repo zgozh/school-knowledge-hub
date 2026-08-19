@@ -3,6 +3,7 @@
     <header class="chat-header">
       <h2 class="chat-title">校务智能问答</h2>
       <TopicSelect v-model="topic" :disabled="sending" />
+      <router-link class="admin-entry" to="/admin">管理端</router-link>
     </header>
 
     <main class="chat-body">
@@ -161,5 +162,11 @@ function send(text) {
 }
 .chat-input .el-input {
   flex: 1;
+}
+.admin-entry {
+  font-size: 14px;
+  color: #409eff;
+  text-decoration: none;
+  white-space: nowrap;
 }
 </style>
