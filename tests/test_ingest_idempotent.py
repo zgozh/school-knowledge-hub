@@ -65,6 +65,29 @@ def make_article(doc_id="doc-1"):
                          column="通知公告", raw_html="<html>x</html>")
 
 
+class FakeMinioSdk:
+    """按真实 MinIO SDK 契约：data 必须是带 read() 的流对象。"""
+
+    def __init__(self):
+        self.objects = {}
+
+    def put_object(self, bucket, name, data, length, **kwargs):
+        body = data.read()
+        self.objects[name] = (body, length)
+
+
+@pytest.mark.asyncio
+async def test_ingest_minio_receives_stream_and_stores_snapshot():
+    """MinIO 正常时：put_object 收到流对象，快照落库且 snapshot_missing=False。"""
+    milvus, mongo = FakeMilvus(), FakeMongo()
+    minio = FakeMinioSdk()
+    doc_id = await ingest_document(make_article(), "通知公告", [], "2026-10-30",
+                                   embed_fn=lambda texts: [{"dense": [0.1] * 4, "sparse": {1: 0.5}} for _ in texts],
+                                   milvus=milvus, mongo_db=mongo, minio=minio)
+    assert mongo.docs[0]["snapshot_missing"] is False
+    assert f"snapshots/{doc_id}.html" in minio.objects
+
+
 @pytest.mark.asyncio
 async def test_ingest_reinsert_same_doc_removes_old():
     milvus, mongo = FakeMilvus(), FakeMongo()

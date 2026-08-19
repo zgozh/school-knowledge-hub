@@ -75,9 +75,11 @@ async def ingest_document(parsed: ParsedArticle, category: str, topics: list[str
     # MinIO 快照（降级：失败标记缺失）
     snapshot_missing = False
     try:
+        import io
+
+        data = parsed.raw_html.encode()
         minio.put_object(settings.minio_bucket, f"snapshots/{doc_id}.html",
-                         parsed.raw_html.encode(), len(parsed.raw_html.encode()),
-                         content_type="text/html")
+                         io.BytesIO(data), len(data), content_type="text/html")
     except Exception as e:
         logger.warning("MinIO 快照失败(降级): %s", e)
         snapshot_missing = True
