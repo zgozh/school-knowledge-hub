@@ -9,6 +9,9 @@ class FakeMilvus:
         self.rows = []
         self.deleted = []
 
+    def has_collection(self, name):
+        return True  # 模拟集合已存在（ensure_collection 短路）
+
     def delete(self, collection_name, filter, **kwargs):
         self.deleted.append(filter)
         return {"delete_count": len(self.rows)}
