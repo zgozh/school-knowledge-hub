@@ -1,43 +1,49 @@
 <template>
-  <div class="chat-view">
-    <header class="chat-header">
-      <h2 class="chat-title">校务智能问答</h2>
-      <TopicSelect v-model="topic" :disabled="sending" />
-      <router-link class="admin-entry" to="/admin">管理端</router-link>
-    </header>
+  <div class="chat-layout">
+    <Sidebar :conversations="list" :current-id="currentId"
+             @new="newConversation" @select="openConversation" @remove="removeConversation" />
+    <div class="chat-view">
+      <header class="chat-header">
+        <h2 class="chat-title">校务智能问答</h2>
+        <TopicSelect v-model="topic" :disabled="sending" />
+        <router-link class="admin-entry" to="/admin">管理端</router-link>
+      </header>
 
-    <main class="chat-body">
-      <div v-if="!messages.length" class="welcome">
-        <h2>你好，我是校务智能助手</h2>
-        <p class="welcome-tip">基于广州大学校务知识库作答，回答附来源。可以从这些示例开始：</p>
-        <div class="examples">
-          <el-button v-for="q in EXAMPLES" :key="q" round @click="send(q)">{{ q }}</el-button>
+      <main class="chat-body">
+        <div v-if="!messages.length" class="welcome">
+          <h2>你好，我是校务智能助手</h2>
+          <p class="welcome-tip">基于广州大学校务知识库作答，回答附来源。可以从这些示例开始：</p>
+          <div class="examples">
+            <el-button v-for="q in EXAMPLES" :key="q" round @click="send(q)">{{ q }}</el-button>
+          </div>
         </div>
-      </div>
-      <MessageList v-else :messages="messages" />
-    </main>
+        <MessageList v-else :messages="messages" />
+      </main>
 
-    <footer class="chat-input">
-      <el-input
-        v-model="input"
-        type="textarea"
-        :autosize="{ minRows: 1, maxRows: 6 }"
-        placeholder="输入你的校务问题（Enter 发送，Shift+Enter 换行）"
-        :disabled="sending"
-        @keydown.enter.exact.prevent="send(input)"
-      />
-      <el-button type="primary" :loading="sending" :disabled="!input.trim() || sending" @click="send(input)">
-        发送
-      </el-button>
-    </footer>
+      <footer class="chat-input">
+        <el-input
+          v-model="input"
+          type="textarea"
+          :autosize="{ minRows: 1, maxRows: 6 }"
+          placeholder="输入你的校务问题（Enter 发送，Shift+Enter 换行）"
+          :disabled="sending"
+          @keydown.enter.exact.prevent="send(input)"
+        />
+        <el-button type="primary" :loading="sending" :disabled="!input.trim() || sending" @click="send(input)">
+          发送
+        </el-button>
+      </footer>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { askChat } from '../../api/chat'
+import { useConversations } from '../../composables/useConversations'
 import MessageList from './components/MessageList.vue'
 import TopicSelect from './components/TopicSelect.vue'
+import Sidebar from './components/Sidebar.vue'
 
 const EXAMPLES = [
   '2026年新生报到需要带什么材料？',
@@ -48,24 +54,21 @@ const EXAMPLES = [
 const topic = ref('')
 const input = ref('')
 const sending = ref(false)
-const messages = ref([])
+const { list, currentId, messages, loadList, newConversation, openConversation, removeConversation } = useConversations()
+
+onMounted(() => { loadList() })
 
 function send(text) {
   const query = String(text || '').trim()
   if (!query || sending.value) return
   input.value = ''
 
-  // 会话历史：内存数组，仅携带已成功作答的轮次
-  const history = messages.value
-    .filter((m) => m.role === 'user' || (m.role === 'assistant' && !m.error && !m.empty && m.content))
-    .map((m) => ({ role: m.role, content: m.content }))
-
   messages.value.push({ role: 'user', content: query })
   const assistant = reactive({ role: 'assistant', content: '', sources: [], loading: true, error: false, empty: false })
   messages.value.push(assistant)
   sending.value = true
 
-  askChat(query, topic.value || null, history, {
+  askChat(query, topic.value || null, currentId.value, {
     onChunk(delta) {
       assistant.content += delta
     },
@@ -73,9 +76,13 @@ function send(text) {
       assistant.sources = sources
       assistant.loading = false
     },
-    onDone() {
+    onDone(info) {
       assistant.loading = false
       sending.value = false
+      if (info?.conversation_id && !currentId.value) {
+        currentId.value = info.conversation_id
+        loadList()
+      }
     },
     onEmpty(message) {
       assistant.content = message
@@ -98,12 +105,18 @@ function send(text) {
 </script>
 
 <style scoped>
+.chat-layout {
+  display: flex;
+  height: 100svh;
+}
 .chat-view {
+  flex: 1;
   display: flex;
   flex-direction: column;
   height: 100svh;
   text-align: left;
   background: #fff;
+  min-width: 0;
 }
 .chat-header {
   display: flex;

@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import ElementPlus from 'element-plus'
 import ChatView from '../src/views/chat/ChatView.vue'
+
+vi.mock('../src/api/chat', () => ({
+  askChat: vi.fn(),
+  listConversations: vi.fn().mockResolvedValue([]),
+  getConversation: vi.fn(),
+  deleteConversation: vi.fn(),
+}))
 
 const router = createRouter({
   history: createMemoryHistory(),
@@ -17,7 +24,7 @@ function mountView() {
   return mount(ChatView, {
     global: {
       plugins: [ElementPlus, router],
-      stubs: { TopicSelect: true, MessageList: true },
+      stubs: { TopicSelect: true, MessageList: true, Sidebar: true },
     },
   })
 }
