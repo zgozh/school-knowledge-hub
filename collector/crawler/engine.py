@@ -11,6 +11,8 @@ from shared.logging import get_logger
 
 logger = get_logger("collector.engine")
 
+MAX_PAGES_CAP = 50
+
 
 class CrawlEngine:
     # 站点 WAF 拦截默认 python-httpx UA，统一伪装浏览器（否则 403）
@@ -32,14 +34,10 @@ class CrawlEngine:
     def set_seen(self, key: str) -> None:
         self._seen.add(key)
 
-    async def fetch_source(self, list_url: str, adapter: SiteAdapter) -> tuple[list[RawArticle], list[dict]]:
-        """抓取一个列表页：返回 (新文章列表, 失败清单)。"""
-        try:
-            resp = await self._http.get(list_url)
-            resp.raise_for_status()
-        except Exception as e:
-            raise ExternalServiceError(f"列表页抓取失败 {list_url}: {e}") from e
-        refs = adapter.parse_list(resp.text, list_url)
+    async def fetch_source(self, list_url: str, adapter: SiteAdapter, max_pages: int = 1) \
+            -> tuple[list[RawArticle], list[dict], bool]:
+        """抓取列表页并翻页：返回 (新文章列表, 失败清单, page_capped)。"""
+        effective_max = max_pages if max_pages > 0 else MAX_PAGES_CAP
         articles: list[RawArticle] = []
         failures: list[dict] = []
         sem = asyncio.Semaphore(5)
@@ -64,8 +62,28 @@ class CrawlEngine:
                 except Exception as e:
                     failures.append({"url": ref.url, "error": str(e)})
 
-        await asyncio.gather(*(fetch_one(r) for r in refs))
-        return articles, failures
+        page = 0
+        current_url = list_url
+        page_capped = False
+        while True:
+            try:
+                resp = await self._http.get(current_url)
+                resp.raise_for_status()
+            except Exception as e:
+                raise ExternalServiceError(f"列表页抓取失败 {current_url}: {e}") from e
+            refs = adapter.parse_list(resp.text, current_url)
+            await asyncio.gather(*(fetch_one(r) for r in refs))
+            page += 1
+            next_url = adapter.next_page_url(resp.text, current_url)
+            if page >= effective_max:
+                # 「全部」档（effective_max == 封顶）且仍有下页 → 标记封顶
+                if next_url is not None and effective_max == MAX_PAGES_CAP:
+                    page_capped = True
+                break
+            if next_url is None:
+                break
+            current_url = next_url
+        return articles, failures, page_capped
 
     async def close(self) -> None:
         await self._http.aclose()

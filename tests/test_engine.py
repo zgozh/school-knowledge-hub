@@ -40,11 +40,11 @@ class FakeHTTP:
 async def test_engine_fetches_and_dedups():
     adapter = FakeAdapter()
     engine = CrawlEngine(http_client=FakeHTTP())
-    articles, failures = await engine.fetch_source("https://x/list.htm", adapter)
+    articles, failures, _ = await engine.fetch_source("https://x/list.htm", adapter)
     assert len(articles) == 2
     assert failures == []
     # 第二轮：全部已见，无新文章
-    articles2, _ = await engine.fetch_source("https://x/list.htm", adapter)
+    articles2, _, _ = await engine.fetch_source("https://x/list.htm", adapter)
     assert articles2 == []
 
 
@@ -52,7 +52,7 @@ async def test_engine_isolates_page_failure():
     adapter = FakeAdapter()
     adapter.fail_url = "https://x/info/1.htm"
     engine = CrawlEngine(http_client=FakeHTTP())
-    articles, failures = await engine.fetch_source("https://x/list.htm", adapter)
+    articles, failures, _ = await engine.fetch_source("https://x/list.htm", adapter)
     assert len(articles) == 1
     assert len(failures) == 1
     assert failures[0]["url"] == "https://x/info/1.htm"
