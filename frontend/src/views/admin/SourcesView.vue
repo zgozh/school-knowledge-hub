@@ -60,6 +60,11 @@
           <el-input-number v-model="form.interval_minutes" :min="1" :max="1440" />
           <span class="unit">分钟</span>
         </el-form-item>
+        <el-form-item label="采集页数" prop="max_pages">
+          <el-select v-model="form.max_pages" style="width: 100%">
+            <el-option v-for="opt in PAGE_OPTIONS" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -81,7 +86,14 @@ const dialogVisible = ref(false)
 const creating = ref(false)
 const runningId = ref('')
 const formRef = ref()
-const defaultForm = { name: '', list_url: '', adapter: '', enabled: true, interval_minutes: 360 }
+const PAGE_OPTIONS = [
+  { label: '1 页（默认）', value: 1 },
+  { label: '3 页', value: 3 },
+  { label: '5 页', value: 5 },
+  { label: '10 页', value: 10 },
+  { label: '全部', value: 0 },
+]
+const defaultForm = { name: '', list_url: '', adapter: '', enabled: true, interval_minutes: 360, max_pages: 1 }
 const form = reactive({ ...defaultForm })
 
 const rules = {
