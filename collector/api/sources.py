@@ -17,7 +17,8 @@ async def get_sources():
 async def create_source(payload: dict):
     cfg = SourceConfig(id="", name=payload["name"], list_url=payload["list_url"],
                        adapter=payload["adapter"], enabled=payload.get("enabled", True),
-                       interval_minutes=payload.get("interval_minutes", 360))
+                       interval_minutes=payload.get("interval_minutes", 360),
+                       max_pages=payload.get("max_pages", 1))
     return {"id": await sources.save_source(cfg)}
 
 

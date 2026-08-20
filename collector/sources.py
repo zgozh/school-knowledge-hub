@@ -18,12 +18,14 @@ class SourceConfig:
     adapter: str
     enabled: bool = True
     interval_minutes: int = 360
+    max_pages: int = 1   # 1/3/5/10/0；0 = 「全部」（内部封顶 50 页）
 
     @staticmethod
     def from_dict(d: dict) -> "SourceConfig":
         return SourceConfig(id=d["id"], name=d["name"], list_url=d["list_url"],
                             adapter=d["adapter"], enabled=d.get("enabled", True),
-                            interval_minutes=d.get("interval_minutes", 360))
+                            interval_minutes=d.get("interval_minutes", 360),
+                            max_pages=d.get("max_pages", 1))
 
 
 async def list_sources() -> list[SourceConfig]:
