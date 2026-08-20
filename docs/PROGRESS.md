@@ -133,14 +133,16 @@
 - 后端 +14 用例（**87 passed**）；前端 +15 用例（**28 passed**）+ build ✅。
 - 派活记录：主会话直接执行（遵循本文件已沉淀教训——workflow 派 glm-5.3 持续空转，见「人工数据入库」段）。
 
-## 采集页数控制器（2026-08-20，设计定稿 ⏳ 待实现）
+## 采集页数控制器（2026-08-20，已完成 ✅）
 
 - 背景：当前一次采集只抓 `list_url` 一页（不翻页）。实测 gzhu 通知公告 85 条 9 页、gznews 头条关注 10399 条 694 页，单页仅 10~15 条，用户要求加「采集程度控制器」可调高采集更多页。
 - 需求已确认：按**页数**档位 `1/3/5/10/全部`；「全部」内部封顶 `MAX_PAGES_CAP=50`；交付=后端+前端+测试+真跑；**通用性**——接入范围主要 gzhu 系网站，翻页抽象为适配器通用接口。
 - 设计定稿（通用分层）：`SiteAdapter` 基类加 `next_page_url` 接口（默认 None=不翻页）→ 新增 `collector/crawler/gzhu_cms.py` 的 `GUZhuCMSAdapter` 实现「解析下页 a.Next 链接」（urljoin 拼绝对地址，末页返回 None）→ gzhu/gznews 适配器继承它；引擎 `fetch_source` 加 `max_pages` 翻页循环（`_seen` 去重跨页生效）；`SourceConfig` 加 `max_pages: int = 1`；前端 SourcesView 加「采集页数」下拉。
 - **spec 已落盘**：`docs/superpowers/specs/2026-08-20-collection-pagination-control-design.md`（含探索结论/数据模型/设计/测试/范围外/验收，实现前必读）。
-- 涉及文件：后端 `collector/sources.py`、`crawler/base.py`、`crawler/gzhu_cms.py`(新)、`crawler/gzhu.py`、`crawler/gznews.py`、`crawler/engine.py`、`tasks.py`、`api/sources.py`；前端 `frontend/src/views/admin/SourcesView.vue`、`frontend/src/api/admin.js`；测试 `tests/` + `frontend/tests/`。
-- **待执行（新会话）**：① 写 plan `docs/superpowers/plans/2026-08-20-collection-pagination-control.md`；② 按 TDD 逐任务实现（**主会话直接执行，勿派 workflow**——glm-5.3 本项目持续空转）；③ 后端 pytest + 前端 vitest/build；④ 容器 rebuild collector+frontend 后真跑验证 3 页源文档数增加且无重复。
+- 涉及文件：后端 `collector/sources.py`、`crawler/base.py`、`crawler/gzhu_cms.py`(新)、`crawler/gzhu.py`、`crawler/gznews.py`、`crawler/engine.py`、`tasks.py`、`api/sources.py`；前端 `frontend/src/views/admin/SourcesView.vue`（`admin.js` 无需改，payload 原样透传）；测试 `tests/test_pagination.py`、`tests/test_sources.py`、`tests/test_engine_pagination.py` + `frontend/tests/sourcesView.test.js`（新）。
+- 6 任务 TDD（每任务最小改动 commit，主会话直接执行，未派 workflow）：`5a29f2d` plan → `b1960ca` 适配器 `next_page_url` 接口 + `gzhu_cms.py` 共享层（gzhu/gznews 继承）→ `80157e0` `SourceConfig.max_pages`（默认 1 向后兼容）+ create_source 透传 → `61ba98f` 引擎翻页循环（`MAX_PAGES_CAP=50` + `page_capped`，`fetch_source` 返回三元素元组）→ `b83943c` 任务编排透传 max_pages + 记录 page_capped → `290a17f` 前端采集页数下拉（1/3/5/10/全部）。
+- **验收证据**：后端 `uv run pytest tests/`（注入 key）**101 passed**（+14 用例）；前端 vitest **34 passed** + build ✅；容器 `docker compose build collector frontend` + `up -d` 后真跑：建 `max_pages=3` 的 gzhu 源 → 采集结果 `succeeded=27 / failed=1 / page_capped=false`，容器 Mongo gzhu 文档 27 篇（> 单页 ~10 篇），`aggregate` 查重复 doc_id 分组 = **0**。
+- 关键实现点：翻页只写在 `gzhu_cms.py` 适配器层（`urljoin` 拼相对 href，末页 `span.NextDisabled` 无 `a.Next` 返回 None），通用基类 `SiteAdapter.next_page_url` 默认 None 不污染站点选择器；`fetch_source` 三元素返回 `(articles, failures, page_capped)`，`_seen` 去重跨页生效；`page_capped` 仅「全部」档打到 `MAX_PAGES_CAP` 且仍有下页时为 True。
 
 ## 环境状态（本机开发）
 
