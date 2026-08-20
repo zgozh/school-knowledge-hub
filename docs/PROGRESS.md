@@ -133,6 +133,15 @@
 - 后端 +14 用例（**87 passed**）；前端 +15 用例（**28 passed**）+ build ✅。
 - 派活记录：主会话直接执行（遵循本文件已沉淀教训——workflow 派 glm-5.3 持续空转，见「人工数据入库」段）。
 
+## 采集页数控制器（2026-08-20，设计定稿 ⏳ 待实现）
+
+- 背景：当前一次采集只抓 `list_url` 一页（不翻页）。实测 gzhu 通知公告 85 条 9 页、gznews 头条关注 10399 条 694 页，单页仅 10~15 条，用户要求加「采集程度控制器」可调高采集更多页。
+- 需求已确认：按**页数**档位 `1/3/5/10/全部`；「全部」内部封顶 `MAX_PAGES_CAP=50`；交付=后端+前端+测试+真跑；**通用性**——接入范围主要 gzhu 系网站，翻页抽象为适配器通用接口。
+- 设计定稿（通用分层）：`SiteAdapter` 基类加 `next_page_url` 接口（默认 None=不翻页）→ 新增 `collector/crawler/gzhu_cms.py` 的 `GUZhuCMSAdapter` 实现「解析下页 a.Next 链接」（urljoin 拼绝对地址，末页返回 None）→ gzhu/gznews 适配器继承它；引擎 `fetch_source` 加 `max_pages` 翻页循环（`_seen` 去重跨页生效）；`SourceConfig` 加 `max_pages: int = 1`；前端 SourcesView 加「采集页数」下拉。
+- **spec 已落盘**：`docs/superpowers/specs/2026-08-20-collection-pagination-control-design.md`（含探索结论/数据模型/设计/测试/范围外/验收，实现前必读）。
+- 涉及文件：后端 `collector/sources.py`、`crawler/base.py`、`crawler/gzhu_cms.py`(新)、`crawler/gzhu.py`、`crawler/gznews.py`、`crawler/engine.py`、`tasks.py`、`api/sources.py`；前端 `frontend/src/views/admin/SourcesView.vue`、`frontend/src/api/admin.js`；测试 `tests/` + `frontend/tests/`。
+- **待执行（新会话）**：① 写 plan `docs/superpowers/plans/2026-08-20-collection-pagination-control.md`；② 按 TDD 逐任务实现（**主会话直接执行，勿派 workflow**——glm-5.3 本项目持续空转）；③ 后端 pytest + 前端 vitest/build；④ 容器 rebuild collector+frontend 后真跑验证 3 页源文档数增加且无重复。
+
 ## 环境状态（本机开发）
 
 | 项 | 状态 |
