@@ -26,7 +26,7 @@ async def test_task_topics_fallback_to_rules_when_llm_empty(monkeypatch):
     fake_engine = AsyncMock()
     fake_engine.fetch_source = AsyncMock(return_value=(
         [RawArticle(url="https://x/1.htm", title="关于新生入学宿舍申请的通知", html="<html>x</html>",
-                    publish_date="2026-08-10", source_site="gzhu", column="通知公告")], []))
+                    publish_date="2026-08-10", source_site="gzhu", column="通知公告")], [], False))
     monkeypatch.setattr(tasks_mod, "CrawlEngine", lambda: fake_engine)
     fake_mongo = AsyncMock()
     fake_mongo.insert_one = AsyncMock()

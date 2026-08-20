@@ -28,7 +28,7 @@ def _load_adapter(name: str):
 
 @async_retry(retries=3, base_delay=2.0, max_delay=30.0)
 async def _fetch_with_retry(engine: CrawlEngine, source: SourceConfig):
-    return await engine.fetch_source(source.list_url, _load_adapter(source.adapter))
+    return await engine.fetch_source(source.list_url, _load_adapter(source.adapter), source.max_pages)
 
 
 async def run_collection_task(source: SourceConfig) -> dict:
@@ -44,7 +44,7 @@ async def run_collection_task(source: SourceConfig) -> dict:
 
     engine = CrawlEngine()
     try:
-        raw_articles, failures = await _fetch_with_retry(engine, source)
+        raw_articles, failures, page_capped = await _fetch_with_retry(engine, source)
     except ExternalServiceError as e:
         await db["task_runs"].update_one({"task_id": task_id},
                                          {"$set": {"status": "failed", "finished_at": datetime.now().isoformat(),
@@ -77,6 +77,8 @@ async def run_collection_task(source: SourceConfig) -> dict:
     await db["task_runs"].update_one({"task_id": task_id},
                                      {"$set": {"status": status, "succeeded": succeeded,
                                                "failed": len(failures), "failures": failures,
+                                               "page_capped": page_capped,
                                                "finished_at": datetime.now().isoformat()}})
     logger.info("任务结束 %s status=%s 成功=%d 失败=%d", task_id, status, succeeded, len(failures))
-    return {"task_id": task_id, "status": status, "succeeded": succeeded, "failed": len(failures)}
+    return {"task_id": task_id, "status": status, "succeeded": succeeded, "failed": len(failures),
+            "page_capped": page_capped}
