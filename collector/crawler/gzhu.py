@@ -3,10 +3,11 @@ import re
 
 from selectolax.parser import HTMLParser
 
-from collector.crawler.base import ArticleRef, RawArticle, SiteAdapter
+from collector.crawler.base import ArticleRef, RawArticle
+from collector.crawler.gzhu_cms import GUZhuCMSAdapter
 
 
-class GUZhuAdapter(SiteAdapter):
+class GUZhuAdapter(GUZhuCMSAdapter):
     site = "gzhu"
 
     def _abs_url(self, base_url: str, href: str) -> str:

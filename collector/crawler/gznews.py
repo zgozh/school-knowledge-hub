@@ -3,10 +3,11 @@ import re
 
 from selectolax.parser import HTMLParser
 
-from collector.crawler.base import ArticleRef, RawArticle, SiteAdapter
+from collector.crawler.base import ArticleRef, RawArticle
+from collector.crawler.gzhu_cms import GUZhuCMSAdapter
 
 
-class GUNewsAdapter(SiteAdapter):
+class GUNewsAdapter(GUZhuCMSAdapter):
     site = "gznews"
 
     def parse_list(self, html: str, base_url: str) -> list[ArticleRef]:

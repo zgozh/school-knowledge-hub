@@ -41,3 +41,7 @@ class SiteAdapter:
 
     def _text(self, node, default: str = "") -> str:
         return node.text(strip=True) if node is not None else default
+
+    def next_page_url(self, html: str, base_url: str) -> str | None:
+        """列表页下一页绝对 URL；默认 None = 不翻页（站点翻页能力由子适配器实现）。"""
+        return None
